@@ -1,0 +1,181 @@
+import 'package:flutter/material.dart';
+import '../data/worker_dao.dart';
+import '../data/worker_model.dart';
+
+class AddWorkerPage extends StatefulWidget {
+  final WorkerModel? worker;
+
+  const AddWorkerPage({super.key, this.worker});
+
+  @override
+  State<AddWorkerPage> createState() => _AddWorkerPageState();
+}
+
+class _AddWorkerPageState extends State<AddWorkerPage> {
+  final _formKey = GlobalKey<FormState>();
+  final WorkerDao _dao = WorkerDao();
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+
+  final TextEditingController rate6to6Controller = TextEditingController();
+  final TextEditingController rate10to6Controller = TextEditingController();
+  final TextEditingController rate6to10Controller = TextEditingController();
+  final TextEditingController rate6to2Controller = TextEditingController();
+  final TextEditingController rate10to2Controller = TextEditingController();
+  final TextEditingController rate2to6Controller = TextEditingController();
+
+  final TextEditingController notesController = TextEditingController();
+
+  String selectedGender = 'Male';
+  String selectedState = 'Telangana';
+  String selectedRole = 'Mason';
+  String selectedWorkType = 'Centring';
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.worker != null) {
+      nameController.text = widget.worker!.name;
+      phoneController.text = widget.worker!.phone;
+
+      selectedGender = widget.worker!.gender;
+      selectedState = widget.worker!.state;
+      selectedRole = widget.worker!.role;
+      selectedWorkType = widget.worker!.workType;
+
+      rate6to6Controller.text = widget.worker!.rate6to6.toString();
+      rate10to6Controller.text = widget.worker!.rate10to6.toString();
+      rate6to10Controller.text = widget.worker!.rate6to10.toString();
+      rate6to2Controller.text = widget.worker!.rate6to2.toString();
+      rate10to2Controller.text = widget.worker!.rate10to2.toString();
+      rate2to6Controller.text = widget.worker!.rate2to6.toString();
+
+      notesController.text = widget.worker!.notes ?? '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.worker == null ? 'Add Worker' : 'Edit Worker'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+
+              TextFormField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Mobile Number'),
+                validator: (v) =>
+                v == null || v.length < 10 ? 'Invalid number' : null,
+              ),
+
+              dropdown('Gender', selectedGender, ['Male', 'Female'],
+                      (v) => setState(() => selectedGender = v)),
+
+              dropdown('Work Type', selectedWorkType,
+                  ['Centring', 'Brickwork'],
+                      (v) => setState(() => selectedWorkType = v)),
+
+              dropdown('State', selectedState,
+                  ['Telangana', 'Andhra', 'Bihar'],
+                      (v) => setState(() => selectedState = v)),
+
+              dropdown('Role', selectedRole, ['Mason', 'Helper'],
+                      (v) => setState(() => selectedRole = v)),
+
+              const SizedBox(height: 16),
+              const Text('Wages', style: TextStyle(fontWeight: FontWeight.bold)),
+
+              wageField(rate6to6Controller, '6 AM – 6 PM'),
+              wageField(rate10to6Controller, '10 AM – 6 PM'),
+              wageField(rate6to10Controller, '6 AM – 10 AM'),
+              wageField(rate6to2Controller, '6 AM – 2 PM'),
+              wageField(rate10to2Controller, '10 AM – 2 PM'),
+              wageField(rate2to6Controller, '2 PM – 6 PM'),
+
+              TextFormField(
+                controller: notesController,
+                decoration:
+                const InputDecoration(labelText: 'Notes (optional)'),
+              ),
+
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  final worker = WorkerModel(
+                    id: widget.worker?.id,
+                    name: nameController.text,
+                    phone: phoneController.text,
+                    gender: selectedGender,
+                    state: selectedState,
+                    role: selectedRole,
+                    workType: selectedWorkType,
+                    rate6to6:
+                    double.tryParse(rate6to6Controller.text) ?? 0,
+                    rate10to6:
+                    double.tryParse(rate10to6Controller.text) ?? 0,
+                    rate6to10:
+                    double.tryParse(rate6to10Controller.text) ?? 0,
+                    rate6to2:
+                    double.tryParse(rate6to2Controller.text) ?? 0,
+                    rate10to2:
+                    double.tryParse(rate10to2Controller.text) ?? 0,
+                    rate2to6:
+                    double.tryParse(rate2to6Controller.text) ?? 0,
+                    notes: notesController.text,
+                  );
+
+                  if (widget.worker == null) {
+                    await _dao.insertWorker(worker);
+                  } else {
+                    await _dao.updateWorker(worker);
+                  }
+
+                  Navigator.pop(context, true);
+                },
+                child:
+                Text(widget.worker == null ? 'Save Worker' : 'Update Worker'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget dropdown(String label, String value, List<String> items,
+      ValueChanged<String> onChanged) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label),
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: (v) => onChanged(v!),
+    );
+  }
+
+  Widget wageField(TextEditingController controller, String label) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(labelText: label, prefixText: '₹ '),
+    );
+  }
+}
