@@ -155,35 +155,27 @@ class _AddEditPrivateWorkPageState
           key: _form,
           child: ListView(
             children: [
-              DropdownButtonFormField<
-                  PrivateWorker>(
-                value: worker,
-                decoration:
-                    const InputDecoration(
-                  labelText:
-                      'Worker',
-                ),
-                items: workers
-                    .map(
-                      (w) =>
-                          DropdownMenuItem(
-                        value: w,
-                        child: Text(
-                          w.name,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    worker = v;
-                  });
-                },
-                validator: (v) =>
-                    v == null
-                        ? 'Required'
-                        : null,
-              ),
+              DropdownButtonFormField<PrivateWorker>(
+  initialValue: worker,
+  items: workers
+      .map(
+        (w) => DropdownMenuItem(
+          value: w,
+          child: Text(w.name),
+        ),
+      )
+      .toList(),
+  onChanged: (v) {
+    setState(() {
+      worker = v;
+    });
+  },
+  validator: (v) =>
+      v == null ? 'Required' : null,
+  decoration: const InputDecoration(
+    labelText: 'Worker',
+  ),
+),
 
               const SizedBox(height: 12),
 
@@ -194,34 +186,27 @@ class _AddEditPrivateWorkPageState
 
               const SizedBox(height: 12),
 
-              DropdownButtonFormField<
-                  SiteModel>(
-                value: site,
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Site',
-                ),
-                items: sites
-                    .map(
-                      (s) =>
-                          DropdownMenuItem(
-                        value: s,
-                        child: Text(
-                          s.siteName,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  setState(() {
-                    site = v;
-                  });
-                },
-                validator: (v) =>
-                    v == null
-                        ? 'Required'
-                        : null,
-              ),
+DropdownButtonFormField<SiteModel>(
+  initialValue: site,
+  items: sites
+      .map(
+        (s) => DropdownMenuItem(
+          value: s,
+          child: Text(s.siteName),
+        ),
+      )
+      .toList(),
+  onChanged: (v) {
+    setState(() {
+      site = v;
+    });
+  },
+  validator: (v) =>
+      v == null ? 'Required' : null,
+  decoration: const InputDecoration(
+    labelText: 'Site',
+  ),
+),
 
               const SizedBox(height: 12),
 
@@ -290,7 +275,7 @@ class _AddEditPrivateWorkPageState
               const SizedBox(height: 12),
 
               DropdownButtonFormField(
-                value: status,
+                initialValue: status,
                 decoration:
                     const InputDecoration(
                   labelText:

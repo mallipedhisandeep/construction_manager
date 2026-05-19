@@ -196,7 +196,7 @@ class _SiteFormPageState
               DropdownButtonFormField<
                   String>(
 
-                value: status,
+                 initialValue: status,
 
                 decoration:
                     const InputDecoration(

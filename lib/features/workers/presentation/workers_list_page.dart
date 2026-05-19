@@ -63,6 +63,8 @@ class _WorkersListPageState
     try {
       await _dao.deleteWorker(workerId);
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Worker deleted'),

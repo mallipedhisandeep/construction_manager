@@ -252,7 +252,7 @@ class _PrivateWorkerDetailsPageState
               const SizedBox(height: 12),
 
               DropdownButtonFormField(
-                value: direction,
+                initialValue: direction,
                 decoration:
                     const InputDecoration(
                   labelText:
@@ -260,14 +260,14 @@ class _PrivateWorkerDetailsPageState
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value:
+                        value:
                         'dad_to_worker',
                     child: Text(
                       'Dad → Worker',
                     ),
                   ),
                   DropdownMenuItem(
-                    value:
+                        value:
                         'worker_to_dad',
                     child: Text(
                       'Worker → Dad',
@@ -282,7 +282,7 @@ class _PrivateWorkerDetailsPageState
               const SizedBox(height: 12),
 
               DropdownButtonFormField(
-                value: mode,
+                initialValue: mode,
                 decoration:
                     const InputDecoration(
                   labelText:

@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import '../../../core/services/storage_service.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -179,132 +183,124 @@ class _SiteDetailsPageState
               height: 10,
             ),
 
-            FutureBuilder<
-                List<
-                    SiteAgreementModel>>(
+FutureBuilder<List<SiteAgreementModel>>(
 
-              future:
-                  _agreementDao
-                      .getBySite(
-                site.id!,
+  future: _agreementDao.getBySite(
+    site.id!,
+  ),
+
+  builder: (_, snapshot) {
+
+    if (snapshot.connectionState ==
+        ConnectionState.waiting) {
+
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (!snapshot.hasData ||
+        snapshot.data!.isEmpty) {
+
+      return const Text(
+        'No agreements added',
+      );
+    }
+
+    final list = snapshot.data!;
+
+    return Column(
+
+      children: list.map(
+        (agreement) {
+
+          return Card(
+
+            child: ListTile(
+
+              leading: const Icon(
+                Icons.description,
               ),
 
-              builder:
-                  (_, snapshot) {
+              title: Text(
+                agreement.fileName,
+              ),
 
-                if (snapshot
-                        .connectionState ==
-                    ConnectionState
-                        .waiting) {
+              subtitle: Text(
+                agreement.createdAt,
+              ),
 
-                  return const Center(
-                    child:
-                        CircularProgressIndicator(),
-                  );
-                }
+              onTap: () async {
 
-                if (!snapshot
-                        .hasData ||
-                    snapshot.data!
-                        .isEmpty) {
+                await launchUrl(
 
-                  return const Text(
-                    'No agreements added',
-                  );
-                }
+                  Uri.parse(
+                    agreement.filePath,
+                  ),
 
-                final list =
-                    snapshot.data!;
-
-                return Column(
-
-                  children:
-                      list.map(
-                    (agreement) {
-
-                      return Card(
-
-                        child:
-                            ListTile(
-
-                          leading:
-                              const Icon(
-                            Icons
-                                .description,
-                          ),
-
-                          title: Text(
-                            agreement
-                                .fileName,
-                          ),
-
-                          subtitle: Text(
-                            agreement
-                                .createdAt,
-                          ),
-
-                          trailing:
-                              Row(
-
-                            mainAxisSize:
-                                MainAxisSize.min,
-
-                            children: [
-
-                              IconButton(
-
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .open_in_new,
-                                ),
-
-                                onPressed:
-                                    () async {
-
-                                  final uri =
-                                      Uri.parse(
-                                    agreement
-                                        .filePath,
-                                  );
-
-                                  await launchUrl(
-                                    uri,
-                                  );
-                                },
-                              ),
-
-                              IconButton(
-
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .delete,
-                                  color:
-                                      Colors.red,
-                                ),
-
-                                onPressed:
-                                    () async {
-
-                                  await _agreementDao
-                                      .deleteAgreement(
-                                    agreement
-                                        .id!,
-                                  );
-
-                                  setState(() {});
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ).toList(),
+                  mode: LaunchMode
+                      .externalApplication,
                 );
               },
+
+              trailing: Row(
+
+                mainAxisSize:
+                    MainAxisSize.min,
+
+                children: [
+
+                  IconButton(
+
+                    icon: const Icon(
+                      Icons.open_in_new,
+                    ),
+
+                    onPressed: () async {
+
+                      await launchUrl(
+
+                        Uri.parse(
+                          agreement.filePath,
+                        ),
+
+                        mode: LaunchMode
+                            .externalApplication,
+                      );
+                    },
+                  ),
+
+                  IconButton(
+
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Colors.red,
+                    ),
+
+                    onPressed: () async {
+
+                      await StorageService.instance
+                          .deleteFile(
+                        agreement.filePath,
+                      );
+
+                      await _agreementDao
+                          .deleteAgreement(
+                        agreement.id!,
+                      );
+
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
             ),
+          );
+        },
+      ).toList(),
+    );
+  },
+),
 
             const SizedBox(
               height: 10,
@@ -410,203 +406,231 @@ class _SiteDetailsPageState
               height: 24,
             ),
 
-            // ======================
-            // ELEVATIONS
-            // ======================
+// ======================
+// ELEVATIONS
+// ======================
 
-            const Text(
+const Text(
 
-              'Elevations',
+  'Elevations',
 
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight:
-                    FontWeight.bold,
+  style: TextStyle(
+    fontSize: 18,
+    fontWeight:
+        FontWeight.bold,
+  ),
+),
+
+const SizedBox(
+  height: 10,
+),
+
+FutureBuilder<
+    List<
+        SiteElevationModel>>(
+
+  future:
+      _elevationFuture,
+
+  builder:
+      (_, snapshot) {
+
+    if (snapshot
+            .connectionState ==
+        ConnectionState
+            .waiting) {
+
+      return const Center(
+        child:
+            CircularProgressIndicator(),
+      );
+    }
+
+    if (!snapshot
+            .hasData ||
+        snapshot.data!
+            .isEmpty) {
+
+      return const Text(
+        'No elevations added',
+      );
+    }
+
+    final list =
+        snapshot.data!;
+
+    return Column(
+
+      children:
+          list.map(
+        (elevation) {
+
+          return Card(
+
+            child:
+                ListTile(
+
+              leading:
+                  const Icon(
+                Icons.image,
               ),
-            ),
 
-            const SizedBox(
-              height: 10,
-            ),
+              title: Text(
 
-            FutureBuilder<
-                List<
-                    SiteElevationModel>>(
+                elevation
+                    .filePath
+                    .split('/')
+                    .last,
+              ),
 
-              future:
-                  _elevationFuture,
+              subtitle: Text(
+                elevation
+                    .createdAt,
+              ),
 
-              builder:
-                  (_, snapshot) {
+              trailing:
+                  Row(
 
-                if (snapshot
-                        .connectionState ==
-                    ConnectionState
-                        .waiting) {
+                mainAxisSize:
+                    MainAxisSize.min,
 
-                  return const Center(
-                    child:
-                        CircularProgressIndicator(),
-                  );
-                }
+                children: [
 
-                if (!snapshot
-                        .hasData ||
-                    snapshot.data!
-                        .isEmpty) {
+                  IconButton(
 
-                  return const Text(
-                    'No elevations added',
-                  );
-                }
+                    icon:
+                        const Icon(
+                      Icons
+                          .open_in_new,
+                    ),
 
-                final list =
-                    snapshot.data!;
+                    onPressed:
+                        () async {
 
-                return Column(
+                      final uri =
+                          Uri.parse(
+                        elevation
+                            .filePath,
+                      );
 
-                  children:
-                      list.map(
-                    (elevation) {
-
-                      return Card(
-
-                        child:
-                            ListTile(
-
-                          leading:
-                              const Icon(
-                            Icons.image,
-                          ),
-
-                          title: Text(
-
-                            elevation
-                                .filePath
-                                .split('/')
-                                .last,
-                          ),
-
-                          subtitle: Text(
-                            elevation
-                                .createdAt,
-                          ),
-
-                          trailing:
-                              Row(
-
-                            mainAxisSize:
-                                MainAxisSize.min,
-
-                            children: [
-
-                              IconButton(
-
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .open_in_new,
-                                ),
-
-                                onPressed:
-                                    () async {
-
-                                  final uri =
-                                      Uri.parse(
-                                    elevation
-                                        .filePath,
-                                  );
-
-                                  await launchUrl(
-                                    uri,
-                                  );
-                                },
-                              ),
-
-                              IconButton(
-
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .delete,
-                                  color:
-                                      Colors.red,
-                                ),
-
-                                onPressed:
-                                    () async {
-
-                                  await _elevationDao
-                                      .delete(
-                                    elevation
-                                        .id!,
-                                  );
-
-                                  setState(
-                                    _loadElevations,
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                      await launchUrl(
+                        uri,
                       );
                     },
-                  ).toList(),
-                );
-              },
-            ),
-
-            const SizedBox(
-              height: 10,
-            ),
-
-            ElevatedButton.icon(
-
-              icon: const Icon(
-                Icons.add,
-              ),
-
-              label: const Text(
-                'Add Elevation',
-              ),
-
-              onPressed: () async {
-
-                final file =
-                    await pickFile();
-
-                if (file == null) {
-                  return;
-                }
-
-                await _elevationDao
-                    .insert(
-
-                  SiteElevationModel(
-
-                    siteId:
-                        widget.site.id!,
-
-                    filePath:
-                        file.path!,
-
-                    createdAt:
-                        DateTime.now()
-                            .toIso8601String(),
                   ),
-                );
 
-                setState(
-                  _loadElevations,
-                );
-              },
+                  IconButton(
+
+                    icon:
+                        const Icon(
+                      Icons
+                          .delete,
+                      color:
+                          Colors.red,
+                    ),
+
+                    onPressed:
+                        () async {
+
+                      await StorageService
+                          .instance
+                          .deleteFile(
+                        elevation
+                            .filePath,
+                      );
+
+                      await _elevationDao
+                          .delete(
+                        elevation
+                            .id!,
+                      );
+
+                      setState(
+                        _loadElevations,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+          );
+        },
+      ).toList(),
+    );
+  },
+),
 
-            const SizedBox(
-              height: 30,
-            ),
+const SizedBox(
+  height: 10,
+),
 
+ElevatedButton.icon(
+
+  icon: const Icon(
+    Icons.add,
+  ),
+
+  label: const Text(
+    'Add Elevation',
+  ),
+
+  onPressed: () async {
+
+    final picked =
+        await pickFile();
+
+    if (picked == null) {
+      return;
+    }
+
+    if (picked.path == null) {
+      return;
+    }
+
+    final file =
+        File(picked.path!);
+
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+
+    final url =
+        await StorageService.instance.uploadFile(
+
+      file: file,
+
+      folder: 'elevations',
+
+      fileName: fileName,
+    );
+
+    if (url == null) {
+      return;
+    }
+
+    await _elevationDao.insert(
+
+      SiteElevationModel(
+
+        siteId:
+            widget.site.id!,
+
+        filePath: url,
+
+        createdAt:
+            DateTime.now()
+                .toIso8601String(),
+      ),
+    );
+
+    setState(
+      _loadElevations,
+    );
+  },
+),
+
+const SizedBox(
+  height: 30,
+),
             // ======================
             // EDIT SITE
             // ======================
@@ -623,6 +647,8 @@ class _SiteDetailsPageState
 
               onPressed: () async {
 
+              if (!mounted) return;
+              
                 final changed =
                     await Navigator.push(
 
@@ -805,54 +831,63 @@ class _SiteDetailsPageState
   // ADD AGREEMENT
   // ==============================
 
-  Future<void>
-      _addAgreement() async {
+Future<void> _addAgreement() async {
 
-    final result =
-        await FilePicker.platform
-            .pickFiles(
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: [
+      'pdf',
+      'jpg',
+      'jpeg',
+      'png',
+    ],
+  );
 
-      type: FileType.custom,
-
-      allowedExtensions: [
-        'pdf',
-        'jpg',
-        'jpeg',
-        'png',
-      ],
-    );
-
-    if (result == null) {
-      return;
-    }
-
-    final file =
-        result.files.first;
-
-    final agreement =
-        SiteAgreementModel(
-
-      siteId:
-          widget.site.id!,
-
-      filePath:
-          file.path!,
-
-      fileName:
-          file.name,
-
-      createdAt:
-          DateTime.now()
-              .toIso8601String(),
-    );
-
-    await _agreementDao
-        .insertAgreement(
-      agreement,
-    );
-
-    setState(() {});
+  if (result == null) {
+    return;
   }
+
+  final picked =
+      result.files.first;
+
+  if (picked.path == null) {
+    return;
+  }
+
+  final file =
+      File(picked.path!);
+
+  final fileName =
+      '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+
+  final url =
+      await StorageService.instance.uploadFile(
+    file: file,
+    folder: 'agreements',
+    fileName: fileName,
+  );
+
+  if (url == null) {
+    return;
+  }
+
+  final agreement =
+      SiteAgreementModel(
+    siteId: widget.site.id!,
+    filePath: url,
+    fileName: picked.name,
+    createdAt:
+        DateTime.now()
+            .toIso8601String(),
+  );
+
+  await _agreementDao
+      .insertAgreement(
+    agreement,
+  );
+
+  setState(() {});
+}
 
   // ==============================
   // ROW

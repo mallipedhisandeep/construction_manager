@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../core/services/firebase_service.dart';
 import 'worker_model.dart';
 

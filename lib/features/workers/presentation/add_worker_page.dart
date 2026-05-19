@@ -250,6 +250,9 @@ class _AddWorkerPageState
           ),
         );
 
+      if (!mounted){
+       return;
+      }
         Navigator.pop(
           context,
           true,
@@ -521,7 +524,7 @@ class _AddWorkerPageState
 
     return DropdownButtonFormField<
         String>(
-      value: value,
+      initialValue: value,
 
       decoration:
           InputDecoration(

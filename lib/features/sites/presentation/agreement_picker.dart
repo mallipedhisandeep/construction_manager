@@ -28,9 +28,7 @@ Future<PlatformFile?> pickAgreementFile() async {
 
   } catch (e) {
 
-    print(
-      'PICK AGREEMENT FILE ERROR => $e',
-    );
+    
 
     return null;
   }

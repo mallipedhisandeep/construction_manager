@@ -719,7 +719,7 @@ class _AttendanceDayPageState
               DropdownButtonFormField<
                   String>(
 
-                value: type,
+                initialValue: type,
 
                 decoration:
                     const InputDecoration(
@@ -757,7 +757,7 @@ class _AttendanceDayPageState
               DropdownButtonFormField<
                   SiteModel>(
 
-                value: site,
+                initialValue: site,
 
                 decoration:
                     const InputDecoration(
@@ -810,7 +810,7 @@ class _AttendanceDayPageState
               DropdownButtonFormField<
                   String>(
 
-                value: payment,
+               initialValue: payment,
 
                 decoration:
                     const InputDecoration(
