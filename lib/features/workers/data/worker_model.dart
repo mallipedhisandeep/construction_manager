@@ -1,5 +1,6 @@
 class WorkerModel {
-  final int? id;
+  final String? id;
+
   final String name;
   final String phone;
   final String gender;
@@ -33,9 +34,12 @@ class WorkerModel {
     this.notes,
   });
 
+  // ==============================
+  // FIRESTORE MAP
+  // ==============================
+
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'phone': phone,
       'gender': gender,
@@ -52,21 +56,28 @@ class WorkerModel {
     };
   }
 
-  factory WorkerModel.fromMap(Map<String, dynamic> map) {
+  // ==============================
+  // FIRESTORE MAP → MODEL
+  // ==============================
+
+  factory WorkerModel.fromMap(
+    Map<String, dynamic> map,
+    String documentId,
+  ) {
     return WorkerModel(
-      id: map['id'],
-      name: map['name'],
-      phone: map['phone'],
-      gender: map['gender'],
-      state: map['state'],
-      role: map['role'],
-      workType: map['work_type'],
-      rate6to6: (map['rate_6_6'] as num).toDouble(),
-      rate10to6: (map['rate_10_6'] as num).toDouble(),
-      rate6to10: (map['rate_6_10'] as num).toDouble(),
-      rate6to2: (map['rate_6_2'] as num).toDouble(),
-      rate10to2: (map['rate_10_2'] as num).toDouble(),
-      rate2to6: (map['rate_2_6'] as num).toDouble(),
+      id: documentId,
+      name: map['name'] ?? '',
+      phone: map['phone'] ?? '',
+      gender: map['gender'] ?? '',
+      state: map['state'] ?? '',
+      role: map['role'] ?? '',
+      workType: map['work_type'] ?? '',
+      rate6to6: (map['rate_6_6'] ?? 0).toDouble(),
+      rate10to6: (map['rate_10_6'] ?? 0).toDouble(),
+      rate6to10: (map['rate_6_10'] ?? 0).toDouble(),
+      rate6to2: (map['rate_6_2'] ?? 0).toDouble(),
+      rate10to2: (map['rate_10_2'] ?? 0).toDouble(),
+      rate2to6: (map['rate_2_6'] ?? 0).toDouble(),
       notes: map['notes'],
     );
   }

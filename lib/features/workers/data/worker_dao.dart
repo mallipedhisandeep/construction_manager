@@ -1,33 +1,63 @@
-import '../../../core/database/db_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../core/services/firebase_service.dart';
 import 'worker_model.dart';
 
 class WorkerDao {
-  final DBHelper _dbHelper = DBHelper.instance;
+  final FirebaseService _firebase =
+      FirebaseService.instance;
 
-  Future<int> insertWorker(WorkerModel worker) async {
-    final db = await _dbHelper.database;
-    return await db.insert('workers', worker.toMap());
+  // ==============================
+  // ADD WORKER
+  // ==============================
+
+  Future<void> insertWorker(
+    WorkerModel worker,
+  ) async {
+    await _firebase.workers.add(worker.toMap());
   }
+
+  // ==============================
+  // GET ALL WORKERS
+  // ==============================
 
   Future<List<WorkerModel>> getAllWorkers() async {
-    final db = await _dbHelper.database;
-    final result = await db.query(
-      'workers',
-      orderBy: 'work_type, state, role, name',
-    );
-    return result.map((e) => WorkerModel.fromMap(e)).toList();
+    final snapshot = await _firebase.workers
+        .orderBy('work_type')
+        .orderBy('state')
+        .orderBy('role')
+        .orderBy('name')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return WorkerModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+        doc.id,
+      );
+    }).toList();
   }
-  Future<int> updateWorker(WorkerModel worker) async {
-    final db = await _dbHelper.database;
-    return await db.update(
-      'workers',
-      worker.toMap(),
-      where: 'id = ?',
-      whereArgs: [worker.id],
-    );
+
+  // ==============================
+  // UPDATE WORKER
+  // ==============================
+
+  Future<void> updateWorker(
+    WorkerModel worker,
+  ) async {
+    await _firebase.workers
+        .doc(worker.id)
+        .update(worker.toMap());
   }
-  Future<void> deleteWorker(int id) async {
-    final db = await _dbHelper.database;
-    await db.delete('workers', where: 'id = ?', whereArgs: [id]);
+
+  // ==============================
+  // DELETE WORKER
+  // ==============================
+
+  Future<void> deleteWorker(
+    String id,
+  ) async {
+    await _firebase.workers
+        .doc(id)
+        .delete();
   }
 }

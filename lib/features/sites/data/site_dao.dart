@@ -1,58 +1,178 @@
-import 'package:sqflite/sqflite.dart';
-import '../../../core/database/db_helper.dart';
+import '../../../core/services/firebase_service.dart';
+
 import 'site_model.dart';
 
 class SiteDao {
-  final _db = DBHelper.instance;
 
-  Future<void> insertSite(SiteModel site) async {
-    final db = await _db.database;
+  final FirebaseService _firebase =
+      FirebaseService.instance;
 
-    print('INSERT SITE => ${site.toMap()}');
+  // ==============================
+  // INSERT SITE
+  // ==============================
 
-    await db.insert(
-      'sites',
-      site.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  Future<void> insertSite(
+    SiteModel site,
+  ) async {
 
-    print('SITE INSERTED');
+    try {
+
+      await _firebase.sites.add(
+        site.toMap(),
+      );
+
+      print(
+        'SITE INSERTED',
+      );
+
+    } catch (e) {
+
+      print(
+        'INSERT SITE ERROR => $e',
+      );
+    }
   }
 
-  Future<void> updateSite(SiteModel site) async {
-    final db = await _db.database;
+  // ==============================
+  // UPDATE SITE
+  // ==============================
 
-    await db.update(
-      'sites',
-      site.toMap(),
-      where: 'id = ?',
-      whereArgs: [site.id],
-    );
+  Future<void> updateSite(
+    SiteModel site,
+  ) async {
+
+    try {
+
+      if (site.id == null) {
+        return;
+      }
+
+      await _firebase.sites
+          .doc(site.id)
+          .update(
+            site.toMap(),
+          );
+
+      print(
+        'SITE UPDATED',
+      );
+
+    } catch (e) {
+
+      print(
+        'UPDATE SITE ERROR => $e',
+      );
+    }
   }
 
-  Future<void> deleteSite(int id) async {
-    final db = await _db.database;
-    await db.delete('sites', where: 'id = ?', whereArgs: [id]);
+  // ==============================
+  // DELETE SITE
+  // ==============================
+
+  Future<void> deleteSite(
+    String id,
+  ) async {
+
+    try {
+
+      await _firebase.sites
+          .doc(id)
+          .delete();
+
+      print(
+        'SITE DELETED',
+      );
+
+    } catch (e) {
+
+      print(
+        'DELETE SITE ERROR => $e',
+      );
+    }
   }
 
-  Future<List<SiteModel>> getAllSites() async {
-    final db = await _db.database;
-    final res = await db.query('sites', orderBy: 'site_name');
+  // ==============================
+  // GET ALL SITES
+  // ==============================
 
-    print('SITES FROM DB => $res');
+  Future<List<SiteModel>>
+      getAllSites() async {
 
-    return res.map((e) => SiteModel.fromMap(e)).toList();
+    try {
+
+      final snapshot =
+          await _firebase.sites
+
+              .orderBy(
+                'site_name',
+              )
+
+              .get();
+
+      final sites =
+          snapshot.docs.map(
+        (doc) {
+
+          return SiteModel.fromMap(
+            doc.data()
+                as Map<String, dynamic>,
+
+            doc.id,
+          );
+        },
+      ).toList();
+
+      print(
+        'SITES => ${sites.length}',
+      );
+
+      return sites;
+
+    } catch (e) {
+
+      print(
+        'GET SITES ERROR => $e',
+      );
+
+      return [];
+    }
   }
 
-  Future<SiteModel?> getById(int id) async {
-    final db = await _db.database;
-    final res = await db.query(
-      'sites',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  // ==============================
+  // GET BY ID
+  // ==============================
 
-    if (res.isEmpty) return null;
-    return SiteModel.fromMap(res.first);
+  Future<SiteModel?>
+      getById(
+    String id,
+  ) async {
+
+    try {
+
+      final doc =
+          await _firebase.sites
+              .doc(id)
+              .get();
+
+      if (!doc.exists) {
+        return null;
+      }
+
+      return SiteModel.fromMap(
+
+        doc.data()
+            as Map<String, dynamic>,
+
+        doc.id,
+      );
+
+    } catch (e) {
+
+      print(
+        'GET SITE BY ID ERROR => $e',
+      );
+
+      return null;
+    }
   }
 }

@@ -1,8 +1,14 @@
 class AttendanceMonthSummary {
-  final Map<String, int> daysByType;
+
+  final Map<String, int>
+      daysByType;
+
   final double totalEarned;
+
   final double totalAdvance;
+
   final double openingBalance;
+
   final double balance;
 
   AttendanceMonthSummary({
