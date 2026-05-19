@@ -1,78 +1,112 @@
-import '../../../core/database/db_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'private_worker_model.dart';
 
 class PrivateWorkerDao {
-  final _db = DBHelper.instance;
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
+
+  final String collection = 'private_workers';
+
+  // ================= GET ALL =================
 
   Future<List<PrivateWorker>> getAll() async {
-    final db = await _db.database;
-    final res = await db.query('private_workers', orderBy: 'name');
-    return res.map((e) => PrivateWorker.fromMap(e)).toList();
+    final snapshot = await _firestore
+        .collection(collection)
+        .orderBy('name')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return PrivateWorker.fromMap(
+        doc.data(),
+        doc.id,
+      );
+    }).toList();
   }
 
-  Future<void> insert(PrivateWorker w) async {
-    final db = await _db.database;
-    await db.insert('private_workers', w.toMap());
+  // ================= INSERT =================
+
+  Future<void> insert(PrivateWorker worker) async {
+    await _firestore.collection(collection).add(
+          worker.toMap(),
+        );
   }
 
-  Future<void> update(PrivateWorker w) async {
-    final db = await _db.database;
-    await db.update(
-      'private_workers',
-      w.toMap(),
-      where: 'id = ?',
-      whereArgs: [w.id],
-    );
+  // ================= UPDATE =================
+
+  Future<void> update(PrivateWorker worker) async {
+    await _firestore
+        .collection(collection)
+        .doc(worker.id)
+        .update(worker.toMap());
   }
 
-  Future<void> delete(int id) async {
-    final db = await _db.database;
-    await db.delete('private_workers', where: 'id = ?', whereArgs: [id]);
+  // ================= DELETE =================
+
+  Future<void> delete(String id) async {
+    await _firestore
+        .collection(collection)
+        .doc(id)
+        .delete();
   }
 
-  // ✅ SUMMARY (LAST SITE + DATE + BALANCE)
-  Future<PrivateWorkerSummary> getSummary(int workerId) async {
-    final db = await _db.database;
+  // ================= SUMMARY =================
 
-    final lastWork = await db.rawQuery('''
-      SELECT site_name, work_date
-      FROM private_work
-      WHERE worker_id = ?
-      ORDER BY work_date DESC
-      LIMIT 1
-    ''', [workerId]);
+  Future<PrivateWorkerSummary> getSummary(
+    String workerId,
+  ) async {
+    final workSnapshot = await _firestore
+        .collection('private_work')
+        .where('worker_id', isEqualTo: workerId)
+        .get();
 
-    final charged = await db.rawQuery(
-        'SELECT SUM(price_charged) total FROM private_work WHERE worker_id = ?',
-        [workerId]);
+    final paymentSnapshot = await _firestore
+        .collection('private_worker_payments')
+        .where('worker_id', isEqualTo: workerId)
+        .get();
 
-    final initialPaid = await db.rawQuery(
-        'SELECT SUM(amount_paid) total FROM private_work WHERE worker_id = ?',
-        [workerId]);
-
-    final payments = await db.rawQuery('''
-      SELECT direction, SUM(amount) total
-      FROM private_worker_payments
-      WHERE worker_id = ?
-      GROUP BY direction
-    ''', [workerId]);
+    String? lastSite;
+    String? lastDate;
 
     double balance = 0;
-    balance += (charged.first['total'] ?? 0) as num;
-    balance -= (initialPaid.first['total'] ?? 0) as num;
 
-    for (final p in payments) {
-      if (p['direction'] == 'dad_to_worker') {
-        balance -= (p['total'] as num);
+    // ===== PRIVATE WORK =====
+
+    for (final doc in workSnapshot.docs) {
+      final data = doc.data();
+
+      final charged =
+          (data['price_charged'] ?? 0).toDouble();
+
+      final paid =
+          (data['amount_paid'] ?? 0).toDouble();
+
+      balance += charged;
+      balance -= paid;
+
+      lastSite = data['site_name'];
+      lastDate = data['work_date'];
+    }
+
+    // ===== PAYMENTS =====
+
+    for (final doc in paymentSnapshot.docs) {
+      final data = doc.data();
+
+      final amount =
+          (data['amount'] ?? 0).toDouble();
+
+      if (data['direction'] == 'dad_to_worker') {
+        balance -= amount;
       } else {
-        balance += (p['total'] as num);
+        balance += amount;
       }
     }
 
     return PrivateWorkerSummary(
-      lastSite: lastWork.isEmpty ? null : lastWork.first['site_name'] as String,
-      lastDate: lastWork.isEmpty ? null : lastWork.first['work_date'] as String,
-      balance: balance.toDouble(),
+      lastSite: lastSite,
+      lastDate: lastDate,
+      balance: balance,
     );
   }
 }

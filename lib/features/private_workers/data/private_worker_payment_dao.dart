@@ -1,60 +1,69 @@
-import 'package:sqflite/sqflite.dart';
-import '../../../core/database/db_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'private_worker_payment_model.dart';
 
 class PrivateWorkerPaymentDao {
-  final _db = DBHelper.instance;
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
 
-  Future<void> insert(PrivateWorkerPayment p) async {
-    final db = await _db.database;
-    await db.insert('private_worker_payments', p.toMap());
+  final String collection =
+      'private_worker_payments';
+
+  // ================= INSERT =================
+
+  Future<void> insert(
+    PrivateWorkerPayment payment,
+  ) async {
+    await _firestore.collection(collection).add(
+          payment.toMap(),
+        );
   }
 
-  Future<List<PrivateWorkerPayment>> getByWorker(int workerId) async {
-    final db = await _db.database;
-    final res = await db.query(
-      'private_worker_payments',
-      where: 'worker_id = ?',
-      whereArgs: [workerId],
-      orderBy: 'payment_date DESC',
-    );
+  // ================= GET BY WORKER =================
 
-    return res.map((e) => PrivateWorkerPayment.fromMap(e)).toList();
+  Future<List<PrivateWorkerPayment>> getByWorker(
+    String workerId,
+  ) async {
+    final snapshot = await _firestore
+        .collection(collection)
+        .where('worker_id', isEqualTo: workerId)
+        .orderBy('created_at', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return PrivateWorkerPayment.fromMap(
+        doc.data(),
+        doc.id,
+      );
+    }).toList();
   }
 
-  /// 🔥 BALANCE LOGIC (CORRECT)
-  /// +ve → Dad should give worker
-  /// -ve → Worker should give dad
-  /// 0  → Settled
-  Future<double> getBalance(int workerId) async {
-    final db = await _db.database;
+  // ================= BALANCE =================
 
-    final given = Sqflite.firstIntValue(
-      await db.rawQuery(
-        '''
-            SELECT SUM(amount)
-            FROM private_worker_payments
-            WHERE worker_id = ?
-              AND direction = 'dad_to_worker'
-            ''',
-        [workerId],
-      ),
-    ) ??
-        0;
+  Future<double> getBalance(
+    String workerId,
+  ) async {
+    final snapshot = await _firestore
+        .collection(collection)
+        .where('worker_id', isEqualTo: workerId)
+        .get();
 
-    final taken = Sqflite.firstIntValue(
-      await db.rawQuery(
-        '''
-            SELECT SUM(amount)
-            FROM private_worker_payments
-            WHERE worker_id = ?
-              AND direction = 'worker_to_dad'
-            ''',
-        [workerId],
-      ),
-    ) ??
-        0;
+    double balance = 0;
 
-    return given.toDouble() - taken.toDouble();
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+
+      final amount =
+          (data['amount'] ?? 0).toDouble();
+
+      if (data['direction'] ==
+          'dad_to_worker') {
+        balance += amount;
+      } else {
+        balance -= amount;
+      }
+    }
+
+    return balance;
   }
 }

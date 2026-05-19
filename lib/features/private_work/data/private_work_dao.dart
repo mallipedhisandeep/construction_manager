@@ -1,32 +1,55 @@
-import '../../../core/database/db_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'private_work_model.dart';
 
 class PrivateWorkDao {
-  final _db = DBHelper.instance;
+  final _firestore =
+      FirebaseFirestore.instance;
+
+  final _collection =
+      FirebaseFirestore.instance
+          .collection('private_work');
 
   Future<List<PrivateWork>> getAll() async {
-    final db = await _db.database;
-    final res = await db.query('private_work', orderBy: 'work_date DESC');
-    return res.map((e) => PrivateWork.fromMap(e)).toList();
+    final snapshot =
+        await _collection
+            .orderBy(
+              'createdAt',
+              descending: true,
+            )
+            .get();
+
+    return snapshot.docs
+        .map(
+          (e) => PrivateWork.fromMap(
+            e.data(),
+            e.id,
+          ),
+        )
+        .toList();
   }
 
-  Future<void> insert(PrivateWork w) async {
-    final db = await _db.database;
-    await db.insert('private_work', w.toMap());
-  }
-
-  Future<void> update(PrivateWork w) async {
-    final db = await _db.database;
-    await db.update(
-      'private_work',
-      w.toMap(),
-      where: 'id = ?',
-      whereArgs: [w.id],
+  Future<void> insert(
+    PrivateWork work,
+  ) async {
+    await _collection.add(
+      work.toMap(),
     );
   }
 
-  Future<void> delete(int id) async {
-    final db = await _db.database;
-    await db.delete('private_work', where: 'id = ?', whereArgs: [id]);
+  Future<void> update(
+    PrivateWork work,
+  ) async {
+    await _collection
+        .doc(work.id)
+        .update(
+          work.toMap(),
+        );
+  }
+
+  Future<void> delete(
+    String id,
+  ) async {
+    await _collection.doc(id).delete();
   }
 }

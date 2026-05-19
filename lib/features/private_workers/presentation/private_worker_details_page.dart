@@ -1,26 +1,41 @@
 import 'package:flutter/material.dart';
-import '../data/private_worker_model.dart';
-import '../data/private_worker_dao.dart';
-import '../data/private_worker_payment_dao.dart';
-import '../data/private_worker_payment_model.dart';
-import 'private_worker_payment_history_page.dart';
-import 'add_edit_private_worker_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class PrivateWorkerDetailsPage extends StatefulWidget {
+import '../data/private_worker_dao.dart';
+import '../data/private_worker_model.dart';
+
+import '../data/private_worker_payment_dao.dart';
+import '../data/private_worker_payment_model.dart';
+
+import 'add_edit_private_worker_page.dart';
+import 'private_worker_payment_history_page.dart';
+
+class PrivateWorkerDetailsPage
+    extends StatefulWidget {
   final PrivateWorker worker;
-  const PrivateWorkerDetailsPage({super.key, required this.worker});
+
+  const PrivateWorkerDetailsPage({
+    super.key,
+    required this.worker,
+  });
 
   @override
-  State<PrivateWorkerDetailsPage> createState() =>
-      _PrivateWorkerDetailsPageState();
+  State<PrivateWorkerDetailsPage>
+      createState() =>
+          _PrivateWorkerDetailsPageState();
 }
 
-class _PrivateWorkerDetailsPageState extends State<PrivateWorkerDetailsPage> {
+class _PrivateWorkerDetailsPageState
+    extends State<
+        PrivateWorkerDetailsPage> {
   final _dao = PrivateWorkerDao();
-  final _paymentDao = PrivateWorkerPaymentDao();
+
+  final _paymentDao =
+      PrivateWorkerPaymentDao();
 
   PrivateWorkerSummary? summary;
+
+  bool loading = true;
 
   @override
   void initState() {
@@ -29,173 +44,386 @@ class _PrivateWorkerDetailsPageState extends State<PrivateWorkerDetailsPage> {
   }
 
   Future<void> load() async {
-    summary = await _dao.getSummary(widget.worker.id!);
+    summary = await _dao.getSummary(
+      widget.worker.id!,
+    );
+
+    loading = false;
+
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    if (summary == null) {
+    if (loading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child:
+              CircularProgressIndicator(),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.worker.name),
+        title: Text(
+          widget.worker.name,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon:
+                const Icon(Icons.delete),
             onPressed: deleteWorker,
-          )
+          ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(
+          16,
+        ),
+        child: ListView(
           children: [
-            Text('Work: ${widget.worker.workType}'),
+            Text(
+              'Work Type: ${widget.worker.workType}',
+            ),
+
+            const SizedBox(height: 8),
+
             Row(
               children: [
-                Text('Phone: ${widget.worker.phone}'),
+                Expanded(
+                  child: Text(
+                    'Phone: ${widget.worker.phone}',
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.call),
-                  onPressed: () =>
-                      launchUrl(Uri.parse('tel:${widget.worker.phone}')),
-                )
+                  icon: const Icon(
+                    Icons.call,
+                    color: Colors.green,
+                  ),
+                  onPressed: () {
+                    launchUrl(
+                      Uri.parse(
+                        'tel:${widget.worker.phone}',
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
-            Text('Last Site: ${summary!.lastSite ?? '-'}'),
-            Text('Last Date: ${summary!.lastDate ?? '-'}'),
+
             const SizedBox(height: 8),
+
+            Text(
+              'Last Site: ${summary?.lastSite ?? '-'}',
+            ),
+
+            Text(
+              'Last Date: ${summary?.lastDate ?? '-'}',
+            ),
+
+            const SizedBox(height: 12),
+
             Text(
               summary!.balance == 0
                   ? 'Balance Settled'
                   : summary!.balance > 0
-                  ? 'Dad should give ₹${summary!.balance}'
-                  : 'Worker should give ₹${summary!.balance.abs()}',
+                      ? 'Dad should give ₹${summary!.balance.toStringAsFixed(0)}'
+                      : 'Worker should give ₹${summary!.balance.abs().toStringAsFixed(0)}',
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: summary!.balance == 0
-                    ? Colors.grey
-                    : summary!.balance > 0
-                    ? Colors.green
-                    : Colors.red,
+                fontSize: 16,
+                fontWeight:
+                    FontWeight.bold,
+                color:
+                    summary!.balance ==
+                            0
+                        ? Colors.grey
+                        : summary!
+                                    .balance >
+                                0
+                            ? Colors.green
+                            : Colors.red,
               ),
             ),
-            const SizedBox(height: 20),
 
-            ElevatedButton(
+            const SizedBox(height: 24),
+
+            ElevatedButton.icon(
+              icon:
+                  const Icon(Icons.edit),
+              label: const Text(
+                'Edit Worker',
+              ),
               onPressed: () async {
-                final ok = await Navigator.push(
+                final ok =
+                    await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) =>
-                        AddEditPrivateWorkerPage(worker: widget.worker),
+                        AddEditPrivateWorkerPage(
+                      worker:
+                          widget.worker,
+                    ),
                   ),
                 );
-                if (ok == true) load();
+
+                if (ok == true) {
+                  load();
+                }
               },
-              child: const Text('Edit'),
             ),
 
-            ElevatedButton(
+            ElevatedButton.icon(
+              icon:
+                  const Icon(Icons.payments),
+              label: const Text(
+                'Add Payment',
+              ),
               onPressed: addPayment,
-              child: const Text('Payment'),
             ),
 
-            ElevatedButton(
+            ElevatedButton.icon(
+              icon:
+                  const Icon(Icons.history),
+              label: const Text(
+                'Payment History',
+              ),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PrivateWorkerPaymentHistoryPage(
-                        workerId: widget.worker.id!),
+                    builder: (_) =>
+                        PrivateWorkerPaymentHistoryPage(
+                      workerId:
+                          widget.worker.id!,
+                    ),
                   ),
                 );
               },
-              child: const Text('History'),
             ),
           ],
         ),
       ),
     );
   }
+
+  // ================= ADD PAYMENT =================
+
   Future<void> addPayment() async {
     double amount = 0;
-    String direction = 'dad_to_worker';
+
+    String direction =
+        'dad_to_worker';
+
     String mode = 'Cash';
-    final noteCtrl = TextEditingController();
+
+    final noteCtrl =
+        TextEditingController();
 
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Add Payment'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount'),
-              onChanged: (v) => amount = double.tryParse(v) ?? 0,
-            ),
-            DropdownButtonFormField(
-              value: direction,
-              items: const [
-                DropdownMenuItem(
-                    value: 'dad_to_worker', child: Text('Dad → Worker')),
-                DropdownMenuItem(
-                    value: 'worker_to_dad', child: Text('Worker → Dad')),
-              ],
-              onChanged: (v) => direction = v!,
-              decoration:
-              const InputDecoration(labelText: 'Payment By'),
-            ),
-            DropdownButtonFormField(
-              value: mode,
-              items: const ['Cash', 'Online']
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: (v) => mode = v!,
-              decoration: const InputDecoration(labelText: 'Mode'),
-            ),
-            TextField(
-              controller: noteCtrl,
-              decoration: const InputDecoration(labelText: 'Notes'),
-            ),
-          ],
+        title:
+            const Text('Add Payment'),
+        content:
+            SingleChildScrollView(
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              TextField(
+                keyboardType:
+                    TextInputType
+                        .number,
+                decoration:
+                    const InputDecoration(
+                  labelText:
+                      'Amount',
+                ),
+                onChanged: (v) {
+                  amount =
+                      double.tryParse(
+                            v,
+                          ) ??
+                          0;
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              DropdownButtonFormField(
+                value: direction,
+                decoration:
+                    const InputDecoration(
+                  labelText:
+                      'Direction',
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value:
+                        'dad_to_worker',
+                    child: Text(
+                      'Dad → Worker',
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value:
+                        'worker_to_dad',
+                    child: Text(
+                      'Worker → Dad',
+                    ),
+                  ),
+                ],
+                onChanged: (v) {
+                  direction = v!;
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              DropdownButtonFormField(
+                value: mode,
+                decoration:
+                    const InputDecoration(
+                  labelText:
+                      'Mode',
+                ),
+                items:
+                    const [
+                      'Cash',
+                      'Online',
+                    ]
+                        .map(
+                          (e) =>
+                              DropdownMenuItem(
+                            value: e,
+                            child:
+                                Text(e),
+                          ),
+                        )
+                        .toList(),
+                onChanged: (v) {
+                  mode = v!;
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: noteCtrl,
+                decoration:
+                    const InputDecoration(
+                  labelText:
+                      'Notes',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+              );
+            },
+            child:
+                const Text('Cancel'),
+          ),
+          ElevatedButton(
             onPressed: () async {
-              if (amount <= 0) return;
+              if (amount <= 0) {
+                return;
+              }
 
-              await _paymentDao.insert(
+              await _paymentDao
+                  .insert(
                 PrivateWorkerPayment(
-                  workerId: widget.worker.id!,
+                  workerId:
+                      widget.worker.id!,
                   amount: amount,
-                  direction: direction,
+                  direction:
+                      direction,
                   mode: mode,
-                  date: DateTime.now().toIso8601String().split('T')[0],
-                  source: 'manual',
-                  notes: noteCtrl.text,
+                  date: DateTime.now()
+                      .toIso8601String()
+                      .split('T')
+                      .first,
+                  notes:
+                      noteCtrl.text
+                          .trim(),
+                  source:
+                      'manual',
+                  createdAt:
+                      DateTime.now(),
                 ),
               );
 
-              Navigator.pop(context);
+              if (!mounted) {
+                return;
+              }
+
+              Navigator.pop(
+                context,
+              );
+
               await load();
             },
-            child: const Text('Save'),
+            child:
+                const Text('Save'),
           ),
         ],
       ),
     );
   }
 
+  // ================= DELETE =================
+
   Future<void> deleteWorker() async {
-    await _dao.delete(widget.worker.id!);
+    final confirm =
+        await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title:
+            const Text('Delete'),
+        content: const Text(
+          'Delete this worker?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                false,
+              );
+            },
+            child:
+                const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                true,
+              );
+            },
+            child:
+                const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) {
+      return;
+    }
+
+    await _dao.delete(
+      widget.worker.id!,
+    );
+
+    if (!mounted) return;
+
     Navigator.pop(context, true);
   }
 }
