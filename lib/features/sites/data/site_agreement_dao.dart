@@ -1,31 +1,115 @@
-import '../../../core/database/db_helper.dart';
+import '../../../core/services/firebase_service.dart';
+
 import 'site_agreement_model.dart';
 
 class SiteAgreementDao {
-  final _db = DBHelper.instance;
 
-  Future<void> insertAgreement(SiteAgreementModel agreement) async {
-    final db = await _db.database;
-    await db.insert('site_agreements', agreement.toMap());
+  final FirebaseService _firebase =
+      FirebaseService.instance;
+
+  // ==============================
+  // INSERT AGREEMENT
+  // ==============================
+
+  Future<void> insertAgreement(
+    SiteAgreementModel agreement,
+  ) async {
+
+    try {
+
+      await _firebase.siteAgreements
+          .add(
+        agreement.toMap(),
+      );
+
+      print(
+        'AGREEMENT INSERTED',
+      );
+
+    } catch (e) {
+
+      print(
+        'INSERT AGREEMENT ERROR => $e',
+      );
+    }
   }
 
-  Future<List<SiteAgreementModel>> getBySite(int siteId) async {
-    final db = await _db.database;
-    final res = await db.query(
-      'site_agreements',
-      where: 'site_id = ?',
-      whereArgs: [siteId],
-      orderBy: 'created_at DESC',
-    );
-    return res.map((e) => SiteAgreementModel.fromMap(e)).toList();
+  // ==============================
+  // GET AGREEMENTS BY SITE
+  // ==============================
+
+  Future<List<SiteAgreementModel>>
+      getBySite(
+    String siteId,
+  ) async {
+
+    try {
+
+      final snapshot =
+          await _firebase.siteAgreements
+
+              .where(
+                'site_id',
+                isEqualTo: siteId,
+              )
+
+              .orderBy(
+                'created_at',
+                descending: true,
+              )
+
+              .get();
+
+      final agreements =
+          snapshot.docs.map(
+        (doc) {
+
+          return SiteAgreementModel
+              .fromMap(
+
+            doc.data()
+                as Map<String, dynamic>,
+
+            doc.id,
+          );
+        },
+      ).toList();
+
+      return agreements;
+
+    } catch (e) {
+
+      print(
+        'GET AGREEMENTS ERROR => $e',
+      );
+
+      return [];
+    }
   }
 
-  Future<void> deleteAgreement(int id) async {
-    final db = await _db.database;
-    await db.delete(
-      'site_agreements',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  // ==============================
+  // DELETE AGREEMENT
+  // ==============================
+
+  Future<void> deleteAgreement(
+    String id,
+  ) async {
+
+    try {
+
+      await _firebase.siteAgreements
+          .doc(id)
+          .delete();
+
+      print(
+        'AGREEMENT DELETED',
+      );
+
+    } catch (e) {
+
+      print(
+        'DELETE AGREEMENT ERROR => $e',
+      );
+    }
   }
 }

@@ -1,135 +1,376 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as p;
+import 'package:flutter/material.dart';
 
-import '../data/site_floor_file_model.dart';
 import '../data/site_floor_file_dao.dart';
+import '../data/site_floor_file_model.dart';
 
-class FloorFilesPage extends StatefulWidget {
-  final int siteId;
+class FloorFilesPage
+    extends StatefulWidget {
+
+  final String siteId;
+
   final int floorNo;
+
   final String floorName;
 
   const FloorFilesPage({
+
     super.key,
+
     required this.siteId,
+
     required this.floorNo,
+
     required this.floorName,
   });
 
   @override
-  State<FloorFilesPage> createState() => _FloorFilesPageState();
+  State<FloorFilesPage> createState() =>
+      _FloorFilesPageState();
 }
 
-class _FloorFilesPageState extends State<FloorFilesPage> {
-  final SiteFloorFileDao _dao = SiteFloorFileDao();
+class _FloorFilesPageState
+    extends State<FloorFilesPage> {
 
-  late Future<List<SiteFloorFileModel>> _filesFuture;
+  final SiteFloorFileDao _dao =
+      SiteFloorFileDao();
+
+  late Future<List<SiteFloorFileModel>>
+      _filesFuture;
+
+  bool isUploading = false;
+
+  // ==============================
+  // INIT
+  // ==============================
 
   @override
   void initState() {
+
     super.initState();
+
     _reload();
   }
 
+  // ==============================
+  // RELOAD
+  // ==============================
+
   void _reload() {
-    _filesFuture = _dao.getFiles(widget.siteId, widget.floorNo);
+
+    _filesFuture =
+        _dao.getFiles(
+
+      widget.siteId,
+
+      widget.floorNo,
+    );
   }
 
-  // ================= PICK FILE =================
+  // ==============================
+  // ADD FILE
+  // ==============================
+
   Future<void> _addFile() async {
+
     try {
-      final count = await _dao.countFiles(widget.siteId, widget.floorNo);
+
+      setState(() {
+        isUploading = true;
+      });
+
+      final count =
+          await _dao.countFiles(
+
+        widget.siteId,
+
+        widget.floorNo,
+      );
+
       if (count >= 4) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Only 4 files allowed per floor')),
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+
+          const SnackBar(
+            content: Text(
+              'Only 4 files allowed per floor',
+            ),
+          ),
         );
+
         return;
       }
 
-      final result = await FilePicker.platform.pickFiles(
+      final result =
+          await FilePicker.platform
+              .pickFiles(
+
         allowMultiple: false,
+
         type: FileType.any,
       );
 
-      if (result == null) return;
+      if (result == null ||
+          result.files.isEmpty) {
 
-      final path = result.files.single.path;
-      if (path == null) return;
+        return;
+      }
 
-      final file = File(path);
+      final pickedFile =
+          result.files.single;
 
-      final model = SiteFloorFileModel(
-        siteId: widget.siteId,
-        floorNo: widget.floorNo,
-        fileName: result.files.single.name,
-        filePath: file.path,
-        uploadedAt: DateTime.now().toIso8601String(),
+      if (pickedFile.path == null) {
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+
+          const SnackBar(
+            content: Text(
+              'Invalid file selected',
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      final model =
+          SiteFloorFileModel(
+
+        siteId:
+            widget.siteId,
+
+        floorNo:
+            widget.floorNo,
+
+        fileName:
+            pickedFile.name,
+
+        filePath:
+            pickedFile.path!,
+
+        uploadedAt:
+            DateTime.now()
+                .toIso8601String(),
       );
 
-      await _dao.insert(model);
+      await _dao.insert(
+        model,
+      );
 
-      setState(() => _reload());
+      setState(() {
+        _reload();
+      });
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+
+      debugPrint(
+        'ADD FLOOR FILE ERROR => $e',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+
+        SnackBar(
+          content: Text(
+            'Error: $e',
+          ),
+        ),
+      );
+
+    } finally {
+
+      if (mounted) {
+
+        setState(() {
+          isUploading = false;
+        });
+      }
+    }
+  }
+
+  // ==============================
+  // DELETE FILE
+  // ==============================
+
+  Future<void> _delete(
+    SiteFloorFileModel file,
+  ) async {
+
+    try {
+
+      await _dao.delete(
+        file.id!,
+      );
+
+      final localFile =
+          File(file.filePath);
+
+      if (await localFile.exists()) {
+
+        await localFile.delete();
+      }
+
+      setState(() {
+        _reload();
+      });
+
+    } catch (e) {
+
+      debugPrint(
+        'DELETE FLOOR FILE ERROR => $e',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+
+        SnackBar(
+          content: Text(
+            'Error deleting file',
+          ),
+        ),
       );
     }
   }
 
-  // ================= DELETE FILE =================
-  Future<void> _delete(SiteFloorFileModel f) async {
-    await _dao.delete(f.id!);
+  // ==============================
+  // UI
+  // ==============================
 
-    final file = File(f.filePath);
-    if (await file.exists()) {
-      await file.delete();
-    }
-
-    setState(() => _reload());
-  }
-
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: Text(widget.floorName),
+        title:
+            Text(widget.floorName),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addFile,
-        child: const Icon(Icons.upload_file),
+
+      floatingActionButton:
+          FloatingActionButton(
+
+        onPressed:
+            isUploading
+                ? null
+                : _addFile,
+
+        child: isUploading
+
+            ? const SizedBox(
+
+                height: 22,
+                width: 22,
+
+                child:
+                    CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+
+            : const Icon(
+                Icons.upload_file,
+              ),
       ),
-      body: FutureBuilder<List<SiteFloorFileModel>>(
+
+      body: FutureBuilder<
+          List<SiteFloorFileModel>>(
+
         future: _filesFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
 
-          final files = snapshot.data!;
+        builder:
+            (context, snapshot) {
 
-          if (files.isEmpty) {
+          if (snapshot
+                  .connectionState ==
+              ConnectionState
+                  .waiting) {
+
             return const Center(
-              child: Text('No files uploaded for this floor'),
+              child:
+                  CircularProgressIndicator(),
             );
           }
 
+          if (!snapshot.hasData ||
+              snapshot.data!.isEmpty) {
+
+            return const Center(
+
+              child: Text(
+                'No files uploaded for this floor',
+              ),
+            );
+          }
+
+          final files =
+              snapshot.data!;
+
           return ListView.builder(
-            itemCount: files.length,
-            itemBuilder: (_, i) {
-              final f = files[i];
-              return ListTile(
-                leading: const Icon(Icons.insert_drive_file),
-                title: Text(f.fileName),
-                subtitle: Text(
-                  'Uploaded: ${f.uploadedAt.split("T").first}',
+
+            itemCount:
+                files.length,
+
+            itemBuilder:
+                (_, i) {
+
+              final file =
+                  files[i];
+
+              return Card(
+
+                margin:
+                    const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _delete(f),
+
+                child: ListTile(
+
+                  leading:
+                      const Icon(
+                    Icons.insert_drive_file,
+                  ),
+
+                  title: Text(
+                    file.fileName,
+                  ),
+
+                  subtitle: Text(
+
+                    'Uploaded: '
+                    '${file.uploadedAt.split('T').first}',
+                  ),
+
+                  trailing:
+                      IconButton(
+
+                    icon:
+                        const Icon(
+                      Icons.delete,
+                      color:
+                          Colors.red,
+                    ),
+
+                    onPressed: () {
+                      _delete(file);
+                    },
+                  ),
                 ),
               );
             },

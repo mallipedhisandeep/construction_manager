@@ -1,27 +1,115 @@
-import '../../../core/database/db_helper.dart';
+import '../../../core/services/firebase_service.dart';
+
 import 'site_elevation_model.dart';
 
 class SiteElevationDao {
-  final _db = DBHelper.instance;
 
-  Future<void> insert(SiteElevationModel m) async {
-    final db = await _db.database;
-    await db.insert('site_elevations', m.toMap());
+  final FirebaseService _firebase =
+      FirebaseService.instance;
+
+  // ==============================
+  // INSERT ELEVATION
+  // ==============================
+
+  Future<void> insert(
+    SiteElevationModel model,
+  ) async {
+
+    try {
+
+      await _firebase.siteElevations
+          .add(
+        model.toMap(),
+      );
+
+      print(
+        'SITE ELEVATION INSERTED',
+      );
+
+    } catch (e) {
+
+      print(
+        'INSERT ELEVATION ERROR => $e',
+      );
+    }
   }
 
-  Future<List<SiteElevationModel>> getBySite(int siteId) async {
-    final db = await _db.database;
-    final res = await db.query(
-      'site_elevations',
-      where: 'site_id = ?',
-      whereArgs: [siteId],
-      orderBy: 'id DESC',
-    );
-    return res.map((e) => SiteElevationModel.fromMap(e)).toList();
+  // ==============================
+  // GET BY SITE
+  // ==============================
+
+  Future<List<SiteElevationModel>>
+      getBySite(
+    String siteId,
+  ) async {
+
+    try {
+
+      final snapshot =
+          await _firebase.siteElevations
+
+              .where(
+                'site_id',
+                isEqualTo: siteId,
+              )
+
+              .orderBy(
+                'created_at',
+                descending: true,
+              )
+
+              .get();
+
+      final elevations =
+          snapshot.docs.map(
+        (doc) {
+
+          return SiteElevationModel
+              .fromMap(
+
+            doc.data()
+                as Map<String, dynamic>,
+
+            doc.id,
+          );
+        },
+      ).toList();
+
+      return elevations;
+
+    } catch (e) {
+
+      print(
+        'GET ELEVATIONS ERROR => $e',
+      );
+
+      return [];
+    }
   }
 
-  Future<void> delete(int id) async {
-    final db = await _db.database;
-    await db.delete('site_elevations', where: 'id = ?', whereArgs: [id]);
+  // ==============================
+  // DELETE ELEVATION
+  // ==============================
+
+  Future<void> delete(
+    String id,
+  ) async {
+
+    try {
+
+      await _firebase.siteElevations
+          .doc(id)
+          .delete();
+
+      print(
+        'SITE ELEVATION DELETED',
+      );
+
+    } catch (e) {
+
+      print(
+        'DELETE ELEVATION ERROR => $e',
+      );
+    }
   }
 }

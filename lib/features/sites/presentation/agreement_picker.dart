@@ -1,9 +1,37 @@
 import 'package:file_picker/file_picker.dart';
 
 Future<PlatformFile?> pickAgreementFile() async {
-  final result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-  );
-  return result?.files.first;
+
+  try {
+
+    final result =
+        await FilePicker.platform
+            .pickFiles(
+
+      type: FileType.custom,
+
+      allowedExtensions: [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+      ],
+    );
+
+    if (result == null ||
+        result.files.isEmpty) {
+
+      return null;
+    }
+
+    return result.files.first;
+
+  } catch (e) {
+
+    print(
+      'PICK AGREEMENT FILE ERROR => $e',
+    );
+
+    return null;
+  }
 }
