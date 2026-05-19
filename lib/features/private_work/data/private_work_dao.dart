@@ -3,9 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'private_work_model.dart';
 
 class PrivateWorkDao {
-  final _firestore =
-      FirebaseFirestore.instance;
-
+ 
   final _collection =
       FirebaseFirestore.instance
           .collection('private_work');

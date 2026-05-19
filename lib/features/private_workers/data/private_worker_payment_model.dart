@@ -1,14 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PrivateWorkerPayment {
   final String? id;
+
   final String workerId;
+
   final double amount;
+
   final String direction;
+
   final String mode;
+
   final String date;
+
   final String? notes;
+
   final String source;
+
   final DateTime createdAt;
 
   PrivateWorkerPayment({
@@ -25,32 +31,40 @@ class PrivateWorkerPayment {
 
   Map<String, dynamic> toMap() {
     return {
-      'worker_id': workerId,
+      'workerId': workerId,
       'amount': amount,
       'direction': direction,
       'mode': mode,
       'date': date,
       'notes': notes,
       'source': source,
-      'created_at': Timestamp.fromDate(createdAt),
+      'createdAt':
+          createdAt
+              .toIso8601String(),
     };
   }
 
   factory PrivateWorkerPayment.fromMap(
     Map<String, dynamic> map,
-    String documentId,
+    String docId,
   ) {
     return PrivateWorkerPayment(
-      id: documentId,
-      workerId: map['worker_id'],
-      amount: (map['amount'] ?? 0).toDouble(),
-      direction: map['direction'],
+      id: docId,
+      workerId:
+          map['workerId'],
+      amount:
+          (map['amount'] as num)
+              .toDouble(),
+      direction:
+          map['direction'],
       mode: map['mode'],
       date: map['date'],
       notes: map['notes'],
       source: map['source'],
       createdAt:
-          (map['created_at'] as Timestamp).toDate(),
+          DateTime.parse(
+        map['createdAt'],
+      ),
     );
   }
 }

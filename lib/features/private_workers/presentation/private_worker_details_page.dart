@@ -195,7 +195,7 @@ class _PrivateWorkerDetailsPageState
                     builder: (_) =>
                         PrivateWorkerPaymentHistoryPage(
                       workerId:
-                          widget.worker.id!,
+                        widget.worker.id.toString(),
                     ),
                   ),
                 );
@@ -336,25 +336,20 @@ class _PrivateWorkerDetailsPageState
                 return;
               }
 
-              await _paymentDao
-                  .insert(
-                PrivateWorkerPayment(
-                  workerId:
-                      widget.worker.id!,
-                  amount: amount,
-                  direction:
-                      direction,
-                  mode: mode,
-                  date: DateTime.now()
-                      .toIso8601String()
-                      .split('T')
-                      .first,
-                  notes:
-                      noteCtrl.text
-                          .trim(),
-                  source:
-                      'manual',
-                  createdAt:
+              await _paymentDao.insert(
+                  PrivateWorkerPayment(
+                    workerId:
+                    widget.worker.id!,
+                    amount: amount,
+                    direction: direction,
+                    mode: mode,
+                    date: DateTime.now()
+                         .toIso8601String()
+                         .split('T')
+                         .first,
+                    source: 'manual',
+                    notes: noteCtrl.text,
+                    createdAt:
                       DateTime.now(),
                 ),
               );

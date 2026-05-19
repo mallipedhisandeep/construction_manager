@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PrivateWorker {
   final String? id;
+
   final String name;
   final String workType;
   final String phone;
   final String? notes;
+
   final DateTime createdAt;
 
   PrivateWorker({
@@ -20,24 +22,31 @@ class PrivateWorker {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'work_type': workType,
+      'workType': workType,
       'phone': phone,
       'notes': notes,
-      'created_at': Timestamp.fromDate(createdAt),
+      'createdAt':
+          Timestamp.fromDate(
+        createdAt,
+      ),
     };
   }
 
   factory PrivateWorker.fromMap(
     Map<String, dynamic> map,
-    String documentId,
+    String docId,
   ) {
     return PrivateWorker(
-      id: documentId,
+      id: docId,
       name: map['name'] ?? '',
-      workType: map['work_type'] ?? '',
+      workType:
+          map['workType'] ?? '',
       phone: map['phone'] ?? '',
       notes: map['notes'],
-      createdAt: (map['created_at'] as Timestamp).toDate(),
+      createdAt:
+          (map['createdAt']
+                  as Timestamp)
+              .toDate(),
     );
   }
 }

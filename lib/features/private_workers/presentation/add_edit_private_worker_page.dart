@@ -151,8 +151,8 @@ class _AddEditPrivateWorkerPageState
       phone: phone.text.trim(),
       notes: notes.text.trim(),
       createdAt:
-          widget.worker?.createdAt ??
-              DateTime.now(),
+      widget.worker?.createdAt ??
+          DateTime.now(),
     );
 
     if (widget.worker == null) {
