@@ -1,40 +1,64 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/services/firebase_service.dart';
+
 import 'private_worker_model.dart';
 
 class PrivateWorkerDao {
-  final _collection =
-      FirebaseFirestore.instance.collection(
-    'private_workers',
-  );
+  // =========================
+  // COLLECTIONS
+  // =========================
 
-  final _workCollection =
-      FirebaseFirestore.instance.collection(
-    'private_work',
-  );
+  final CollectionReference<
+          Map<String, dynamic>>
+      _collection =
+      FirebaseService.instance
+          .privateWorkers;
 
-  final _paymentCollection =
-      FirebaseFirestore.instance.collection(
-    'private_worker_payments',
-  );
+  final CollectionReference<
+          Map<String, dynamic>>
+      _workCollection =
+      FirebaseService.instance
+          .privateWork;
 
-  Future<List<PrivateWorker>> getAll() async {
-    final snapshot = await _collection
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
-        .get();
+  final CollectionReference<
+          Map<String, dynamic>>
+      _paymentCollection =
+      FirebaseService.instance
+          .privateWorkerPayments;
 
-    return snapshot.docs
-        .map(
-          (e) => PrivateWorker.fromMap(
-            e.data(),
-            e.id,
-          ),
-        )
-        .toList();
+  // =========================
+  // GET ALL
+  // =========================
+
+  Future<List<PrivateWorker>>
+      getAll() async {
+    try {
+      final snapshot =
+          await _collection
+              .orderBy(
+                'created_at',
+                descending: true,
+              )
+              .get();
+
+      return snapshot.docs
+          .map(
+            (e) =>
+                PrivateWorker.fromMap(
+              e.data(),
+              e.id,
+            ),
+          )
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
+
+  // =========================
+  // INSERT
+  // =========================
 
   Future<void> insert(
     PrivateWorker worker,
@@ -44,9 +68,17 @@ class PrivateWorkerDao {
     );
   }
 
+  // =========================
+  // UPDATE
+  // =========================
+
   Future<void> update(
     PrivateWorker worker,
   ) async {
+    if (worker.id == null) {
+      return;
+    }
+
     await _collection
         .doc(worker.id)
         .update(
@@ -54,88 +86,115 @@ class PrivateWorkerDao {
         );
   }
 
+  // =========================
+  // DELETE
+  // =========================
+
   Future<void> delete(
     String id,
   ) async {
-    await _collection.doc(id).delete();
+    await _collection
+        .doc(id)
+        .delete();
   }
 
-  // ================= SUMMARY =================
+  // =========================
+  // SUMMARY
+  // =========================
 
-  Future<PrivateWorkerSummary> getSummary(
+  Future<PrivateWorkerSummary>
+      getSummary(
     String workerId,
   ) async {
-    final workSnapshot =
-        await _workCollection
-            .where(
-              'workerId',
-              isEqualTo: workerId,
-            )
-            .get();
+    try {
+      final workSnapshot =
+          await _workCollection
+              .where(
+                'worker_id',
+                isEqualTo:
+                    workerId,
+              )
+              .get();
 
-    final paymentSnapshot =
-        await _paymentCollection
-            .where(
-              'workerId',
-              isEqualTo: workerId,
-            )
-            .get();
+      final paymentSnapshot =
+          await _paymentCollection
+              .where(
+                'worker_id',
+                isEqualTo:
+                    workerId,
+              )
+              .get();
 
-    double totalCharged = 0;
-    double totalPaid = 0;
+      double totalCharged = 0;
 
-    String? lastSite;
-    String? lastDate;
+      double totalPaid = 0;
 
-    for (final doc in workSnapshot.docs) {
-      final data = doc.data();
+      String? lastSite;
 
-      totalCharged +=
-          (data['priceCharged'] ?? 0)
-              .toDouble();
+      String? lastDate;
 
-      totalPaid +=
-          (data['amountPaid'] ?? 0)
-              .toDouble();
+      for (final doc
+          in workSnapshot.docs) {
+        final data =
+            doc.data();
 
-      lastSite =
-          data['siteName'];
+        totalCharged +=
+            (data['price_charged'] ??
+                    0)
+                .toDouble();
 
-      lastDate =
-          data['workDate'];
-    }
+        totalPaid +=
+            (data['amount_paid'] ??
+                    0)
+                .toDouble();
 
-    for (final doc
-        in paymentSnapshot.docs) {
-      final data = doc.data();
+        lastSite =
+            data['site_name'];
 
-      final amount =
-          (data['amount'] ?? 0)
-              .toDouble();
-
-      final direction =
-          data['direction'];
-
-      if (direction ==
-          'dad_to_worker') {
-        totalPaid += amount;
-      } else {
-        totalCharged += amount;
+        lastDate =
+            data['work_date'];
       }
-    }
 
-    return PrivateWorkerSummary(
-      lastSite: lastSite,
-      lastDate: lastDate,
-      balance:
-          totalCharged - totalPaid,
-    );
+      for (final doc
+          in paymentSnapshot.docs) {
+        final data =
+            doc.data();
+
+        final amount =
+            (data['amount'] ?? 0)
+                .toDouble();
+
+        final direction =
+            data['direction'];
+
+        if (direction ==
+            'dad_to_worker') {
+          totalPaid += amount;
+        } else {
+          totalCharged += amount;
+        }
+      }
+
+      return PrivateWorkerSummary(
+        lastSite: lastSite,
+        lastDate: lastDate,
+        balance:
+            totalCharged -
+                totalPaid,
+      );
+    } catch (e) {
+      return PrivateWorkerSummary(
+        balance: 0,
+      );
+    }
   }
 }
 
 class PrivateWorkerSummary {
   final String? lastSite;
+
   final String? lastDate;
+
   final double balance;
 
   PrivateWorkerSummary({

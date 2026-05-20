@@ -1,5 +1,6 @@
-class SiteFloorFileModel {
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+class SiteFloorFileModel {
   final String? id;
 
   final String siteId;
@@ -10,21 +11,15 @@ class SiteFloorFileModel {
 
   final String filePath;
 
-  final String uploadedAt;
+  final Timestamp? uploadedAt;
 
   SiteFloorFileModel({
-
     this.id,
-
     required this.siteId,
-
     required this.floorNo,
-
     required this.fileName,
-
     required this.filePath,
-
-    required this.uploadedAt,
+    this.uploadedAt,
   });
 
   // ==============================
@@ -32,9 +27,7 @@ class SiteFloorFileModel {
   // ==============================
 
   Map<String, dynamic> toMap() {
-
     return {
-
       'site_id': siteId,
 
       'floor_no': floorNo,
@@ -43,7 +36,9 @@ class SiteFloorFileModel {
 
       'file_path': filePath,
 
-      'uploaded_at': uploadedAt,
+      'uploaded_at':
+          uploadedAt ??
+              FieldValue.serverTimestamp(),
     };
   }
 
@@ -55,9 +50,7 @@ class SiteFloorFileModel {
     Map<String, dynamic> map,
     String documentId,
   ) {
-
     return SiteFloorFileModel(
-
       id: documentId,
 
       siteId:
@@ -73,7 +66,7 @@ class SiteFloorFileModel {
           map['file_path'] ?? '',
 
       uploadedAt:
-          map['uploaded_at'] ?? '',
+          map['uploaded_at'],
     );
   }
 
@@ -82,23 +75,14 @@ class SiteFloorFileModel {
   // ==============================
 
   SiteFloorFileModel copyWith({
-
     String? id,
-
     String? siteId,
-
     int? floorNo,
-
     String? fileName,
-
     String? filePath,
-
-    String? uploadedAt,
-
+    Timestamp? uploadedAt,
   }) {
-
     return SiteFloorFileModel(
-
       id: id ?? this.id,
 
       siteId:

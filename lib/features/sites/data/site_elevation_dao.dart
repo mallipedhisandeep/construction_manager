@@ -1,4 +1,5 @@
 import '../../../core/services/firebase_service.dart';
+
 import 'site_elevation_model.dart';
 
 class SiteElevationDao {
@@ -13,7 +14,9 @@ class SiteElevationDao {
     SiteElevationModel model,
   ) async {
     try {
-      await _firebase.siteElevations.add(
+      await _firebase
+          .siteElevations
+          .add(
         model.toMap(),
       );
     } catch (e) {
@@ -31,7 +34,8 @@ class SiteElevationDao {
   ) async {
     try {
       final snapshot =
-          await _firebase.siteElevations
+          await _firebase
+              .siteElevations
               .where(
                 'site_id',
                 isEqualTo: siteId,
@@ -42,33 +46,64 @@ class SiteElevationDao {
               )
               .get();
 
-      final elevations =
-          snapshot.docs.map(
+      return snapshot.docs.map(
         (doc) {
           return SiteElevationModel
               .fromMap(
-            doc.data()
-                as Map<String, dynamic>,
+            doc.data(),
             doc.id,
           );
         },
       ).toList();
-
-      return elevations;
     } catch (e) {
       return [];
     }
   }
 
   // ==============================
-  // DELETE ELEVATION
+  // REALTIME STREAM
+  // ==============================
+
+  Stream<List<SiteElevationModel>>
+      watchBySite(
+    String siteId,
+  ) {
+    return _firebase
+        .siteElevations
+        .where(
+          'site_id',
+          isEqualTo: siteId,
+        )
+        .orderBy(
+          'created_at',
+          descending: true,
+        )
+        .snapshots()
+        .map(
+      (snapshot) {
+        return snapshot.docs.map(
+          (doc) {
+            return SiteElevationModel
+                .fromMap(
+              doc.data(),
+              doc.id,
+            );
+          },
+        ).toList();
+      },
+    );
+  }
+
+  // ==============================
+  // DELETE
   // ==============================
 
   Future<void> delete(
     String id,
   ) async {
     try {
-      await _firebase.siteElevations
+      await _firebase
+          .siteElevations
           .doc(id)
           .delete();
     } catch (e) {

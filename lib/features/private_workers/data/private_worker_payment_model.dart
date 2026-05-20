@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PrivateWorkerPayment {
   final String? id;
 
@@ -15,7 +17,7 @@ class PrivateWorkerPayment {
 
   final String source;
 
-  final DateTime createdAt;
+  final Timestamp createdAt;
 
   PrivateWorkerPayment({
     this.id,
@@ -29,6 +31,10 @@ class PrivateWorkerPayment {
     required this.createdAt,
   });
 
+  // ==============================
+  // TO MAP
+  // ==============================
+
   Map<String, dynamic> toMap() {
     return {
       'workerId': workerId,
@@ -38,11 +44,13 @@ class PrivateWorkerPayment {
       'date': date,
       'notes': notes,
       'source': source,
-      'createdAt':
-          createdAt
-              .toIso8601String(),
+      'createdAt': createdAt,
     };
   }
+
+  // ==============================
+  // FROM MAP
+  // ==============================
 
   factory PrivateWorkerPayment.fromMap(
     Map<String, dynamic> map,
@@ -50,21 +58,51 @@ class PrivateWorkerPayment {
   ) {
     return PrivateWorkerPayment(
       id: docId,
-      workerId:
-          map['workerId'],
+      workerId: map['workerId'] ?? '',
       amount:
-          (map['amount'] as num)
+          (map['amount'] ?? 0)
               .toDouble(),
       direction:
-          map['direction'],
-      mode: map['mode'],
-      date: map['date'],
+          map['direction'] ?? '',
+      mode: map['mode'] ?? '',
+      date: map['date'] ?? '',
       notes: map['notes'],
-      source: map['source'],
+      source: map['source'] ?? '',
       createdAt:
-          DateTime.parse(
-        map['createdAt'],
-      ),
+          map['createdAt'] is Timestamp
+              ? map['createdAt']
+              : Timestamp.now(),
+    );
+  }
+
+  // ==============================
+  // COPY WITH
+  // ==============================
+
+  PrivateWorkerPayment copyWith({
+    String? id,
+    String? workerId,
+    double? amount,
+    String? direction,
+    String? mode,
+    String? date,
+    String? notes,
+    String? source,
+    Timestamp? createdAt,
+  }) {
+    return PrivateWorkerPayment(
+      id: id ?? this.id,
+      workerId:
+          workerId ?? this.workerId,
+      amount: amount ?? this.amount,
+      direction:
+          direction ?? this.direction,
+      mode: mode ?? this.mode,
+      date: date ?? this.date,
+      notes: notes ?? this.notes,
+      source: source ?? this.source,
+      createdAt:
+          createdAt ?? this.createdAt,
     );
   }
 }

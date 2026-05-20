@@ -1,55 +1,107 @@
 import '../../../core/services/firebase_service.dart';
+
 import 'worker_model.dart';
 
 class WorkerDao {
   final FirebaseService _firebase =
       FirebaseService.instance;
 
-  // ==============================
+  // =========================
   // ADD WORKER
-  // ==============================
+  // =========================
 
   Future<void> insertWorker(
     WorkerModel worker,
   ) async {
-    await _firebase.workers.add(worker.toMap());
+    await _firebase.workers.add(
+      worker.toMap(),
+    );
   }
 
-  // ==============================
-  // GET ALL WORKERS
-  // ==============================
+  // =========================
+  // REALTIME WORKERS STREAM
+  // =========================
 
-  Future<List<WorkerModel>> getAllWorkers() async {
-    final snapshot = await _firebase.workers
+  Stream<List<WorkerModel>>
+      watchWorkers() {
+    return _firebase.workers
+
         .orderBy('work_type')
-        .orderBy('state')
-        .orderBy('role')
-        .orderBy('name')
-        .get();
 
-    return snapshot.docs.map((doc) {
+        .orderBy('state')
+
+        .orderBy('role')
+
+        .orderBy('name')
+
+        .snapshots()
+
+        .map((snapshot) {
+      return snapshot.docs.map((
+        doc,
+      ) {
+        return WorkerModel.fromMap(
+          doc.data(),
+          doc.id,
+        );
+      }).toList();
+    });
+  }
+
+  // =========================
+  // GET ALL WORKERS
+  // =========================
+
+  Future<List<WorkerModel>>
+      getAllWorkers() async {
+    final snapshot =
+        await _firebase.workers
+
+            .orderBy(
+              'work_type',
+            )
+
+            .orderBy(
+              'state',
+            )
+
+            .orderBy(
+              'role',
+            )
+
+            .orderBy(
+              'name',
+            )
+
+            .get();
+
+    return snapshot.docs.map((
+      doc,
+    ) {
       return WorkerModel.fromMap(
-        doc.data() as Map<String, dynamic>,
+        doc.data(),
         doc.id,
       );
     }).toList();
   }
 
-  // ==============================
-  // UPDATE WORKER
-  // ==============================
+  // =========================
+  // UPDATE
+  // =========================
 
   Future<void> updateWorker(
     WorkerModel worker,
   ) async {
     await _firebase.workers
         .doc(worker.id)
-        .update(worker.toMap());
+        .update(
+          worker.toMap(),
+        );
   }
 
-  // ==============================
-  // DELETE WORKER
-  // ==============================
+  // =========================
+  // DELETE
+  // =========================
 
   Future<void> deleteWorker(
     String id,

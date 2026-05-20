@@ -27,14 +27,18 @@ class AddEditPrivateWorkPage
 class _AddEditPrivateWorkPageState
     extends State<
         AddEditPrivateWorkPage> {
-  final _dao = PrivateWorkDao();
+  final PrivateWorkDao _dao =
+      PrivateWorkDao();
 
-  final _workerDao =
+  final PrivateWorkerDao
+      _workerDao =
       PrivateWorkerDao();
 
-  final _siteDao = SiteDao();
+  final SiteDao _siteDao =
+      SiteDao();
 
-  final _form =
+  final GlobalKey<FormState>
+      _form =
       GlobalKey<FormState>();
 
   List<PrivateWorker> workers =
@@ -61,13 +65,15 @@ class _AddEditPrivateWorkPageState
 
   bool loading = true;
 
+  bool isSaving = false;
+
   @override
   void initState() {
     super.initState();
 
     price = TextEditingController(
-      text: widget.work
-              ?.priceCharged
+      text: widget
+              .work?.priceCharged
               .toString() ??
           '',
     );
@@ -80,7 +86,8 @@ class _AddEditPrivateWorkPageState
     );
 
     notes = TextEditingController(
-      text: widget.work?.notes ?? '',
+      text:
+          widget.work?.notes ?? '',
     );
 
     status =
@@ -93,40 +100,51 @@ class _AddEditPrivateWorkPageState
   @override
   void dispose() {
     price.dispose();
+
     paid.dispose();
+
     notes.dispose();
 
     super.dispose();
   }
 
   Future<void> load() async {
-    workers =
-        await _workerDao.getAll();
+    try {
+      workers =
+          await _workerDao.getAll();
 
-    sites =
-        await _siteDao.getAllSites();
+      sites =
+          await _siteDao
+              .getAllSites();
 
-    if (widget.work != null) {
-      worker = workers.firstWhere(
-        (e) =>
-            e.id ==
-            widget.work!.workerId,
-      );
+      if (widget.work != null) {
+        worker = workers.firstWhere(
+          (e) =>
+              e.id ==
+              widget.work!.workerId,
+        );
 
-      site = sites.firstWhere(
-        (e) =>
-            e.id ==
-            widget.work!.siteId,
-      );
+        site = sites.firstWhere(
+          (e) =>
+              e.id ==
+              widget.work!.siteId,
+        );
 
-      date = DateTime.parse(
-        widget.work!.workDate,
+        date = DateTime.parse(
+          widget.work!.workDate,
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        'LOAD PRIVATE WORK ERROR => $e',
       );
     }
 
     loading = false;
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -155,72 +173,101 @@ class _AddEditPrivateWorkPageState
           key: _form,
           child: ListView(
             children: [
-              DropdownButtonFormField<PrivateWorker>(
-  initialValue: worker,
-  items: workers
-      .map(
-        (w) => DropdownMenuItem(
-          value: w,
-          child: Text(w.name),
-        ),
-      )
-      .toList(),
-  onChanged: (v) {
-    setState(() {
-      worker = v;
-    });
-  },
-  validator: (v) =>
-      v == null ? 'Required' : null,
-  decoration: const InputDecoration(
-    labelText: 'Worker',
-  ),
-),
+              DropdownButtonFormField<
+                  PrivateWorker>(
+                initialValue: worker,
+                items: workers
+                    .map(
+                      (w) =>
+                          DropdownMenuItem(
+                        value: w,
+                        child:
+                            Text(w.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  setState(() {
+                    worker = v;
+                  });
+                },
+                validator: (v) {
+                  if (v == null) {
+                    return 'Required';
+                  }
 
-              const SizedBox(height: 12),
+                  return null;
+                },
+                decoration:
+                    const InputDecoration(
+                  labelText: 'Worker',
+                  border:
+                      OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
 
               if (worker != null)
                 Text(
                   'Work Type: ${worker!.workType}',
                 ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
-DropdownButtonFormField<SiteModel>(
-  initialValue: site,
-  items: sites
-      .map(
-        (s) => DropdownMenuItem(
-          value: s,
-          child: Text(s.siteName),
-        ),
-      )
-      .toList(),
-  onChanged: (v) {
-    setState(() {
-      site = v;
-    });
-  },
-  validator: (v) =>
-      v == null ? 'Required' : null,
-  decoration: const InputDecoration(
-    labelText: 'Site',
-  ),
-),
+              DropdownButtonFormField<
+                  SiteModel>(
+                initialValue: site,
+                items: sites
+                    .map(
+                      (s) =>
+                          DropdownMenuItem(
+                        value: s,
+                        child: Text(
+                          s.siteName,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  setState(() {
+                    site = v;
+                  });
+                },
+                validator: (v) {
+                  if (v == null) {
+                    return 'Required';
+                  }
 
-              const SizedBox(height: 12),
+                  return null;
+                },
+                decoration:
+                    const InputDecoration(
+                  labelText: 'Site',
+                  border:
+                      OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
 
               ListTile(
                 contentPadding:
                     EdgeInsets.zero,
                 title: Text(
-                  'Date: ${date.toIso8601String().split('T')[0]}',
+                  'Date: ${date.toIso8601String().split('T').first}',
                 ),
                 trailing: const Icon(
                   Icons.calendar_today,
                 ),
                 onTap: () async {
-                  final d =
+                  final DateTime? d =
                       await showDatePicker(
                     context: context,
                     firstDate:
@@ -238,7 +285,9 @@ DropdownButtonFormField<SiteModel>(
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
               TextFormField(
                 controller: price,
@@ -248,10 +297,12 @@ DropdownButtonFormField<SiteModel>(
                     const InputDecoration(
                   labelText:
                       'Price Charged',
+                  border:
+                      OutlineInputBorder(),
                 ),
                 validator: (v) {
                   if (v == null ||
-                      v.isEmpty) {
+                      v.trim().isEmpty) {
                     return 'Required';
                   }
 
@@ -259,7 +310,9 @@ DropdownButtonFormField<SiteModel>(
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
               TextFormField(
                 controller: paid,
@@ -269,17 +322,23 @@ DropdownButtonFormField<SiteModel>(
                     const InputDecoration(
                   labelText:
                       'Amount Paid',
+                  border:
+                      OutlineInputBorder(),
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
-              DropdownButtonFormField(
+              DropdownButtonFormField<
+                  String>(
                 initialValue: status,
                 decoration:
                     const InputDecoration(
-                  labelText:
-                      'Status',
+                  labelText: 'Status',
+                  border:
+                      OutlineInputBorder(),
                 ),
                 items:
                     const [
@@ -296,31 +355,52 @@ DropdownButtonFormField<SiteModel>(
                         )
                         .toList(),
                 onChanged: (v) {
-                  status = v!;
+                  if (v != null) {
+                    status = v;
+                  }
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
               TextFormField(
                 controller: notes,
                 decoration:
                     const InputDecoration(
-                  labelText:
-                      'Notes',
+                  labelText: 'Notes',
+                  border:
+                      OutlineInputBorder(),
                 ),
                 maxLines: 3,
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(
+                height: 24,
+              ),
 
               ElevatedButton(
-                onPressed: save,
-                child: Text(
-                  widget.work == null
-                      ? 'Save Work'
-                      : 'Update Work',
-                ),
+                onPressed:
+                    isSaving
+                        ? null
+                        : save,
+                child:
+                    isSaving
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            widget.work ==
+                                    null
+                                ? 'Save Work'
+                                : 'Update Work',
+                          ),
               ),
             ],
           ),
@@ -340,42 +420,69 @@ DropdownButtonFormField<SiteModel>(
       return;
     }
 
-    final work = PrivateWork(
-      id: widget.work?.id,
-      workerId: worker!.id!,
-      workerName: worker!.name,
-      workType: worker!.workType,
-      siteId: site!.id!,
-      siteName: site!.siteName,
-      workDate: date
-          .toIso8601String()
-          .split('T')
-          .first,
-      priceCharged:
-          double.parse(
-        price.text.trim(),
-      ),
-      amountPaid:
-          paid.text.trim().isEmpty
-              ? 0
-              : double.parse(
-                  paid.text.trim(),
-                ),
-      status: status,
-      notes: notes.text.trim(),
-      createdAt:
-          widget.work?.createdAt ??
-              DateTime.now(),
-    );
+    setState(() {
+      isSaving = true;
+    });
 
-    if (widget.work == null) {
-      await _dao.insert(work);
-    } else {
-      await _dao.update(work);
+    try {
+      final PrivateWork work =
+          PrivateWork(
+        id: widget.work?.id,
+        workerId: worker!.id!,
+        workerName:
+            worker!.name,
+        workType:
+            worker!.workType,
+        siteId: site!.id!,
+        siteName:
+            site!.siteName,
+        workDate: date
+            .toIso8601String()
+            .split('T')
+            .first,
+        priceCharged:
+            double.parse(
+          price.text.trim(),
+        ),
+        amountPaid:
+            paid.text.trim().isEmpty
+                ? 0
+                : double.parse(
+                    paid.text.trim(),
+                  ),
+        status: status,
+        notes:
+            notes.text.trim(),
+        createdAt:
+            widget.work
+                    ?.createdAt ??
+                DateTime.now(),
+      );
+
+      if (widget.work == null) {
+        await _dao.insert(work);
+      } else {
+        await _dao.update(work);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(
+        context,
+        true,
+      );
+    } catch (e) {
+      debugPrint(
+        'SAVE PRIVATE WORK ERROR => $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
     }
-
-    if (!mounted) return;
-
-    Navigator.pop(context, true);
   }
 }

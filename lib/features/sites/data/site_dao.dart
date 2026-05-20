@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
 import '../../../core/services/firebase_service.dart';
+
 import 'site_model.dart';
 
 class SiteDao {
@@ -35,8 +39,11 @@ class SiteDao {
 
       await _firebase.sites
           .doc(site.id)
-          .update(
+          .set(
             site.toMap(),
+            SetOptions(
+              merge: true,
+            ),
           );
     } catch (e) {
       rethrow;
@@ -69,25 +76,50 @@ class SiteDao {
       final snapshot =
           await _firebase.sites
               .orderBy(
-                'site_name',
+                'site_name_search',
               )
               .get();
 
-      final sites =
-          snapshot.docs.map(
+      return snapshot.docs.map(
         (doc) {
           return SiteModel.fromMap(
-            doc.data()
-                as Map<String, dynamic>,
+            doc.data(),
             doc.id,
           );
         },
       ).toList();
-
-      return sites;
     } catch (e) {
+      debugPrint(
+        'GET SITES ERROR => $e',
+      );
+
       return [];
     }
+  }
+
+  // ==============================
+  // REALTIME STREAM
+  // ==============================
+
+  Stream<List<SiteModel>>
+      watchSites() {
+    return _firebase.sites
+        .orderBy(
+          'site_name_search',
+        )
+        .snapshots()
+        .map(
+      (snapshot) {
+        return snapshot.docs.map(
+          (doc) {
+            return SiteModel.fromMap(
+              doc.data(),
+              doc.id,
+            );
+          },
+        ).toList();
+      },
+    );
   }
 
   // ==============================
@@ -113,6 +145,10 @@ class SiteDao {
         doc.id,
       );
     } catch (e) {
+      debugPrint(
+        'GET SITE ERROR => $e',
+      );
+
       return null;
     }
   }

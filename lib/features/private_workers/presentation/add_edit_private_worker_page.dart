@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../data/private_worker_dao.dart';
 import '../data/private_worker_model.dart';
 
-class AddEditPrivateWorkerPage extends StatefulWidget {
+class AddEditPrivateWorkerPage
+    extends StatefulWidget {
   final PrivateWorker? worker;
 
   const AddEditPrivateWorkerPage({
@@ -18,14 +19,21 @@ class AddEditPrivateWorkerPage extends StatefulWidget {
 
 class _AddEditPrivateWorkerPageState
     extends State<AddEditPrivateWorkerPage> {
-  final _dao = PrivateWorkerDao();
+  final PrivateWorkerDao _dao =
+      PrivateWorkerDao();
 
-  final _form = GlobalKey<FormState>();
+  final GlobalKey<FormState> _form =
+      GlobalKey<FormState>();
 
   late TextEditingController name;
+
   late TextEditingController work;
+
   late TextEditingController phone;
+
   late TextEditingController notes;
+
+  bool isSaving = false;
 
   @override
   void initState() {
@@ -36,7 +44,8 @@ class _AddEditPrivateWorkerPageState
     );
 
     work = TextEditingController(
-      text: widget.worker?.workType ?? '',
+      text:
+          widget.worker?.workType ?? '',
     );
 
     phone = TextEditingController(
@@ -51,8 +60,11 @@ class _AddEditPrivateWorkerPageState
   @override
   void dispose() {
     name.dispose();
+
     work.dispose();
+
     phone.dispose();
+
     notes.dispose();
 
     super.dispose();
@@ -60,7 +72,8 @@ class _AddEditPrivateWorkerPageState
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.worker != null;
+    final bool isEdit =
+        widget.worker != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -71,18 +84,31 @@ class _AddEditPrivateWorkerPageState
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding:
+            const EdgeInsets.all(16),
         child: Form(
           key: _form,
           child: ListView(
             children: [
-              _field(name, 'Name', true),
+              _field(
+                name,
+                'Name',
+                true,
+              ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
-              _field(work, 'Work Type', true),
+              _field(
+                work,
+                'Work Type',
+                true,
+              ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
               _field(
                 phone,
@@ -91,19 +117,39 @@ class _AddEditPrivateWorkerPageState
                 TextInputType.phone,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(
+                height: 12,
+              ),
 
-              _field(notes, 'Notes'),
+              _field(
+                notes,
+                'Notes',
+              ),
 
-              const SizedBox(height: 24),
+              const SizedBox(
+                height: 24,
+              ),
 
               ElevatedButton(
-                onPressed: save,
-                child: Text(
-                  isEdit
-                      ? 'Update Worker'
-                      : 'Save Worker',
-                ),
+                onPressed:
+                    isSaving
+                        ? null
+                        : save,
+                child:
+                    isSaving
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            isEdit
+                                ? 'Update Worker'
+                                : 'Save Worker',
+                          ),
               ),
             ],
           ),
@@ -124,45 +170,74 @@ class _AddEditPrivateWorkerPageState
       keyboardType: keyboard,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        border:
+            const OutlineInputBorder(),
       ),
-      validator: required
-          ? (v) {
-              if (v == null ||
-                  v.trim().isEmpty) {
-                return 'Required';
-              }
+      validator:
+          required
+              ? (v) {
+                  if (v == null ||
+                      v.trim().isEmpty) {
+                    return 'Required';
+                  }
 
-              return null;
-            }
-          : null,
+                  return null;
+                }
+              : null,
     );
   }
 
   Future<void> save() async {
-    if (!_form.currentState!.validate()) {
+    if (!_form.currentState!
+        .validate()) {
       return;
     }
 
-    final worker = PrivateWorker(
-      id: widget.worker?.id,
-      name: name.text.trim(),
-      workType: work.text.trim(),
-      phone: phone.text.trim(),
-      notes: notes.text.trim(),
-      createdAt:
-      widget.worker?.createdAt ??
-          DateTime.now(),
-    );
+    setState(() {
+      isSaving = true;
+    });
 
-    if (widget.worker == null) {
-      await _dao.insert(worker);
-    } else {
-      await _dao.update(worker);
+    try {
+      final PrivateWorker worker =
+          PrivateWorker(
+        id: widget.worker?.id,
+        name: name.text.trim(),
+        workType:
+            work.text.trim(),
+        phone:
+            phone.text.trim(),
+        notes:
+            notes.text.trim(),
+        createdAt:
+            widget.worker
+                    ?.createdAt ??
+                DateTime.now(),
+      );
+
+      if (widget.worker == null) {
+        await _dao.insert(worker);
+      } else {
+        await _dao.update(worker);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(
+        context,
+        true,
+      );
+    } catch (e) {
+      debugPrint(
+        'SAVE PRIVATE WORKER ERROR => $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
     }
-
-    if (!mounted) return;
-
-    Navigator.pop(context, true);
   }
 }

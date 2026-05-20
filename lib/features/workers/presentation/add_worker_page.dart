@@ -25,10 +25,6 @@ class _AddWorkerPageState
   final WorkerDao _dao =
       WorkerDao();
 
-  // ==============================
-  // CONTROLLERS
-  // ==============================
-
   final TextEditingController
       nameController =
       TextEditingController();
@@ -65,10 +61,6 @@ class _AddWorkerPageState
       notesController =
       TextEditingController();
 
-  // ==============================
-  // DROPDOWN VALUES
-  // ==============================
-
   String selectedGender =
       'Male';
 
@@ -83,19 +75,15 @@ class _AddWorkerPageState
 
   bool isSaving = false;
 
-  // ==============================
-  // INIT
-  // ==============================
-
   @override
   void initState() {
 
     super.initState();
 
-    if (widget.worker != null) {
+    final worker =
+        widget.worker;
 
-      final worker =
-          widget.worker!;
+    if (worker != null) {
 
       nameController.text =
           worker.name;
@@ -144,10 +132,6 @@ class _AddWorkerPageState
     }
   }
 
-  // ==============================
-  // DISPOSE
-  // ==============================
-
   @override
   void dispose() {
 
@@ -172,15 +156,10 @@ class _AddWorkerPageState
     super.dispose();
   }
 
-  // ==============================
-  // SAVE WORKER
-  // ==============================
-
   Future<void> saveWorker() async {
 
     if (!_formKey.currentState!
         .validate()) {
-
       return;
     }
 
@@ -263,10 +242,6 @@ class _AddWorkerPageState
                 .trim(),
       );
 
-      // ==========================
-      // INSERT / UPDATE
-      // ==========================
-
       if (widget.worker == null) {
 
         await _dao.insertWorker(
@@ -289,7 +264,6 @@ class _AddWorkerPageState
       ).showSnackBar(
 
         SnackBar(
-
           content: Text(
 
             widget.worker == null
@@ -338,10 +312,6 @@ class _AddWorkerPageState
     }
   }
 
-  // ==============================
-  // UI
-  // ==============================
-
   @override
   Widget build(BuildContext context) {
 
@@ -359,276 +329,273 @@ class _AddWorkerPageState
         ),
       ),
 
-      body: Padding(
+      body: Center(
 
-        padding:
-            const EdgeInsets.all(16),
+        child: ConstrainedBox(
 
-        child: Form(
+          constraints:
+              const BoxConstraints(
+            maxWidth: 700,
+          ),
 
-          key: _formKey,
+          child: Padding(
 
-          child: ListView(
+            padding:
+                const EdgeInsets.all(
+              16,
+            ),
 
-            children: [
+            child: Form(
 
-              // ==================
-              // NAME
-              // ==================
+              key: _formKey,
 
-              TextFormField(
+              child: ListView(
 
-                controller:
-                    nameController,
+                children: [
 
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Name',
-                ),
+                  TextFormField(
 
-                validator: (v) {
+                    controller:
+                        nameController,
 
-                  if (v == null ||
-                      v.trim().isEmpty) {
+                    decoration:
+                        const InputDecoration(
+                      labelText:
+                          'Name',
+                    ),
 
-                    return 'Required';
-                  }
+                    validator: (v) {
 
-                  return null;
-                },
-              ),
+                      if (v == null ||
+                          v.trim().isEmpty) {
 
-              // ==================
-              // PHONE
-              // ==================
+                        return 'Required';
+                      }
 
-              TextFormField(
+                      return null;
+                    },
+                  ),
 
-                controller:
-                    phoneController,
+                  const SizedBox(
+                    height: 12,
+                  ),
 
-                keyboardType:
-                    TextInputType.phone,
+                  TextFormField(
 
-                decoration:
-                    const InputDecoration(
-                  labelText:
-                      'Mobile Number',
-                ),
+                    controller:
+                        phoneController,
 
-                validator: (v) {
+                    keyboardType:
+                        TextInputType.phone,
 
-                  if (v == null ||
-                      v.trim().length < 10) {
+                    decoration:
+                        const InputDecoration(
+                      labelText:
+                          'Mobile Number',
+                    ),
 
-                    return 'Invalid number';
-                  }
+                    validator: (v) {
 
-                  return null;
-                },
-              ),
+                      if (v == null ||
+                          v.trim().length <
+                              10) {
 
-              // ==================
-              // DROPDOWNS
-              // ==================
+                        return 'Invalid number';
+                      }
 
-              dropdown(
+                      return null;
+                    },
+                  ),
 
-                'Gender',
+                  const SizedBox(
+                    height: 12,
+                  ),
 
-                selectedGender,
+                  dropdown(
+                    'Gender',
+                    selectedGender,
+                    [
+                      'Male',
+                      'Female',
+                    ],
+                    (v) {
 
-                [
-                  'Male',
-                  'Female',
+                      setState(() {
+                        selectedGender = v;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 12,
+                  ),
+
+                  dropdown(
+                    'Work Type',
+                    selectedWorkType,
+                    [
+                      'Centring',
+                      'Brickwork',
+                    ],
+                    (v) {
+
+                      setState(() {
+                        selectedWorkType = v;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 12,
+                  ),
+
+                  dropdown(
+                    'State',
+                    selectedState,
+                    [
+                      'Telangana',
+                      'Andhra',
+                      'Bihar',
+                    ],
+                    (v) {
+
+                      setState(() {
+                        selectedState = v;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 12,
+                  ),
+
+                  dropdown(
+                    'Role',
+                    selectedRole,
+                    [
+                      'Mason',
+                      'Helper',
+                    ],
+                    (v) {
+
+                      setState(() {
+                        selectedRole = v;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 24,
+                  ),
+
+                  const Text(
+                    'Wages',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 12,
+                  ),
+
+                  wageField(
+                    rate6to6Controller,
+                    '6 AM – 6 PM',
+                  ),
+
+                  wageField(
+                    rate10to6Controller,
+                    '10 AM – 6 PM',
+                  ),
+
+                  wageField(
+                    rate6to10Controller,
+                    '6 AM – 10 PM',
+                  ),
+
+                  wageField(
+                    rate6to2Controller,
+                    '6 AM – 2 PM',
+                  ),
+
+                  wageField(
+                    rate10to2Controller,
+                    '10 AM – 2 PM',
+                  ),
+
+                  wageField(
+                    rate2to6Controller,
+                    '2 PM – 6 PM',
+                  ),
+
+                  const SizedBox(
+                    height: 16,
+                  ),
+
+                  TextFormField(
+
+                    controller:
+                        notesController,
+
+                    minLines: 3,
+                    maxLines: 5,
+
+                    decoration:
+                        const InputDecoration(
+                      labelText:
+                          'Notes',
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 30,
+                  ),
+
+                  SizedBox(
+
+                    height: 50,
+
+                    child: ElevatedButton(
+
+                      onPressed:
+
+                          isSaving
+                              ? null
+                              : saveWorker,
+
+                      child:
+
+                          isSaving
+
+                              ? const CircularProgressIndicator()
+
+                              : Text(
+
+                                  widget.worker ==
+                                          null
+
+                                      ? 'Save Worker'
+
+                                      : 'Update Worker',
+                                ),
+                    ),
+                  ),
                 ],
-
-                (v) {
-
-                  setState(() {
-                    selectedGender = v;
-                  });
-                },
               ),
-
-              dropdown(
-
-                'Work Type',
-
-                selectedWorkType,
-
-                [
-                  'Centring',
-                  'Brickwork',
-                ],
-
-                (v) {
-
-                  setState(() {
-                    selectedWorkType = v;
-                  });
-                },
-              ),
-
-              dropdown(
-
-                'State',
-
-                selectedState,
-
-                [
-                  'Telangana',
-                  'Andhra',
-                  'Bihar',
-                ],
-
-                (v) {
-
-                  setState(() {
-                    selectedState = v;
-                  });
-                },
-              ),
-
-              dropdown(
-
-                'Role',
-
-                selectedRole,
-
-                [
-                  'Mason',
-                  'Helper',
-                ],
-
-                (v) {
-
-                  setState(() {
-                    selectedRole = v;
-                  });
-                },
-              ),
-
-              const SizedBox(
-                height: 16,
-              ),
-
-              const Text(
-
-                'Wages',
-
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-
-              wageField(
-                rate6to6Controller,
-                '6 AM – 6 PM',
-              ),
-
-              wageField(
-                rate10to6Controller,
-                '10 AM – 6 PM',
-              ),
-
-              wageField(
-                rate6to10Controller,
-                '6 AM – 10 AM',
-              ),
-
-              wageField(
-                rate6to2Controller,
-                '6 AM – 2 PM',
-              ),
-
-              wageField(
-                rate10to2Controller,
-                '10 AM – 2 PM',
-              ),
-
-              wageField(
-                rate2to6Controller,
-                '2 PM – 6 PM',
-              ),
-
-              // ==================
-              // NOTES
-              // ==================
-
-              TextFormField(
-
-                controller:
-                    notesController,
-
-                decoration:
-                    const InputDecoration(
-                  labelText:
-                      'Notes (optional)',
-                ),
-              ),
-
-              const SizedBox(
-                height: 24,
-              ),
-
-              // ==================
-              // SAVE BUTTON
-              // ==================
-
-              ElevatedButton(
-
-                onPressed:
-
-                    isSaving
-                        ? null
-                        : saveWorker,
-
-                child:
-
-                    isSaving
-
-                        ? const SizedBox(
-
-                            height: 22,
-                            width: 22,
-
-                            child:
-                                CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-
-                        : Text(
-
-                            widget.worker ==
-                                    null
-
-                                ? 'Save Worker'
-
-                                : 'Update Worker',
-                          ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ==============================
-  // DROPDOWN
-  // ==============================
-
   Widget dropdown(
-
     String label,
-
-    String value,
-
+    String currentValue,
     List<String> items,
-
     ValueChanged<String>
         onChanged,
   ) {
@@ -636,7 +603,8 @@ class _AddWorkerPageState
     return DropdownButtonFormField<
         String>(
 
-      initialValue: value,
+      initialValue:
+          currentValue,
 
       decoration:
           InputDecoration(
@@ -645,13 +613,10 @@ class _AddWorkerPageState
 
       items:
           items.map(
-
         (e) {
 
           return DropdownMenuItem(
-
             value: e,
-
             child: Text(e),
           );
         },
@@ -666,31 +631,31 @@ class _AddWorkerPageState
     );
   }
 
-  // ==============================
-  // WAGE FIELD
-  // ==============================
-
   Widget wageField(
-
     TextEditingController
         controller,
-
     String label,
   ) {
 
-    return TextFormField(
+    return Padding(
 
-      controller: controller,
+      padding:
+          const EdgeInsets.only(
+        bottom: 12,
+      ),
 
-      keyboardType:
-          TextInputType.number,
+      child: TextFormField(
 
-      decoration:
-          InputDecoration(
+        controller: controller,
 
-        labelText: label,
+        keyboardType:
+            TextInputType.number,
 
-        prefixText: '₹ ',
+        decoration:
+            InputDecoration(
+          labelText: label,
+          prefixText: '₹ ',
+        ),
       ),
     );
   }

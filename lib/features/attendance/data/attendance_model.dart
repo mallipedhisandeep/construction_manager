@@ -1,5 +1,6 @@
-class AttendanceModel {
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+class AttendanceModel {
   final String? id;
 
   final String workerId;
@@ -20,6 +21,8 @@ class AttendanceModel {
 
   final double balanceAfter;
 
+  final Timestamp createdAt;
+
   AttendanceModel({
     this.id,
     required this.workerId,
@@ -31,56 +34,72 @@ class AttendanceModel {
     required this.paymentMode,
     this.paymentRef,
     required this.balanceAfter,
-  });
+    Timestamp? createdAt,
+  }) : createdAt =
+           createdAt ??
+           Timestamp.now();
 
-  // ==============================
+  // =========================
   // DATE KEY
-  // ==============================
+  // =========================
 
   String get dateKey =>
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 
-  // ==============================
+  // =========================
   // TO MAP
-  // ==============================
+  // =========================
 
   Map<String, dynamic> toMap() {
-
     return {
-
       'worker_id': workerId,
 
       'site_id': siteId,
 
-      'date': dateKey,
+      'date': Timestamp.fromDate(
+        DateTime(
+          date.year,
+          date.month,
+          date.day,
+        ),
+      ),
 
-      'attendance_type': attendanceType,
+      'date_key': dateKey,
+
+      'attendance_type':
+          attendanceType,
 
       'wage': wage,
 
       'advance': advance,
 
-      'payment_mode': paymentMode,
+      'payment_mode':
+          paymentMode,
 
       'payment_ref': paymentRef,
 
-      'balance_after': balanceAfter,
+      'balance_after':
+          balanceAfter,
+
+      'created_at':
+          createdAt,
     };
   }
 
-  // ==============================
+  // =========================
   // FROM MAP
-  // ==============================
+  // =========================
 
   factory AttendanceModel.fromMap(
     Map<String, dynamic> map,
     String documentId,
   ) {
+    final Timestamp timestamp =
+        map['date'];
 
     return AttendanceModel(
-
       id: documentId,
 
       workerId:
@@ -89,12 +108,12 @@ class AttendanceModel {
       siteId:
           map['site_id'],
 
-      date: DateTime.parse(
-        map['date'],
-      ),
+      date:
+          timestamp.toDate(),
 
       attendanceType:
-          map['attendance_type'] ?? '',
+          map['attendance_type'] ??
+              '',
 
       wage:
           (map['wage'] ?? 0)
@@ -105,27 +124,31 @@ class AttendanceModel {
               .toDouble(),
 
       paymentMode:
-          map['payment_mode'] ?? '',
+          map['payment_mode'] ??
+              '',
 
       paymentRef:
           map['payment_ref'],
 
       balanceAfter:
-          (map['balance_after'] ?? 0)
+          (map['balance_after'] ??
+                  0)
               .toDouble(),
+
+      createdAt:
+          map['created_at'] ??
+              Timestamp.now(),
     );
   }
 
-  // ==============================
+  // =========================
   // COPY WITH
-  // ==============================
+  // =========================
 
   AttendanceModel copyWith({
     double? balanceAfter,
   }) {
-
     return AttendanceModel(
-
       id: id,
 
       workerId: workerId,
@@ -150,6 +173,8 @@ class AttendanceModel {
       balanceAfter:
           balanceAfter ??
               this.balanceAfter,
+
+      createdAt: createdAt,
     );
   }
 }

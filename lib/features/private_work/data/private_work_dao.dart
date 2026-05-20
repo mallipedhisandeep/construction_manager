@@ -1,31 +1,52 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/services/firebase_service.dart';
+
 import 'private_work_model.dart';
 
 class PrivateWorkDao {
- 
-  final _collection =
-      FirebaseFirestore.instance
-          .collection('private_work');
+  // =========================
+  // COLLECTION
+  // =========================
 
-  Future<List<PrivateWork>> getAll() async {
-    final snapshot =
-        await _collection
-            .orderBy(
-              'createdAt',
-              descending: true,
-            )
-            .get();
+  final CollectionReference<
+          Map<String, dynamic>>
+      _collection =
+      FirebaseService.instance
+          .privateWork;
 
-    return snapshot.docs
-        .map(
-          (e) => PrivateWork.fromMap(
-            e.data(),
-            e.id,
-          ),
-        )
-        .toList();
+  // =========================
+  // GET ALL
+  // =========================
+
+  Future<List<PrivateWork>>
+      getAll() async {
+    try {
+      final snapshot =
+          await _collection
+              .orderBy(
+                'created_at',
+                descending: true,
+              )
+              .get();
+
+      return snapshot.docs
+          .map(
+            (e) =>
+                PrivateWork.fromMap(
+              e.data(),
+              e.id,
+            ),
+          )
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
+
+  // =========================
+  // INSERT
+  // =========================
 
   Future<void> insert(
     PrivateWork work,
@@ -35,9 +56,17 @@ class PrivateWorkDao {
     );
   }
 
+  // =========================
+  // UPDATE
+  // =========================
+
   Future<void> update(
     PrivateWork work,
   ) async {
+    if (work.id == null) {
+      return;
+    }
+
     await _collection
         .doc(work.id)
         .update(
@@ -45,9 +74,15 @@ class PrivateWorkDao {
         );
   }
 
+  // =========================
+  // DELETE
+  // =========================
+
   Future<void> delete(
     String id,
   ) async {
-    await _collection.doc(id).delete();
+    await _collection
+        .doc(id)
+        .delete();
   }
 }

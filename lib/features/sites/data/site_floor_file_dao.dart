@@ -1,4 +1,5 @@
 import '../../../core/services/firebase_service.dart';
+
 import 'site_floor_file_model.dart';
 
 class SiteFloorFileDao {
@@ -16,7 +17,8 @@ class SiteFloorFileDao {
   ) async {
     try {
       final snapshot =
-          await _firebase.siteFloorFiles
+          await _firebase
+              .siteFloorFiles
               .where(
                 'site_id',
                 isEqualTo: siteId,
@@ -31,22 +33,57 @@ class SiteFloorFileDao {
               )
               .get();
 
-      final files =
-          snapshot.docs.map(
+      return snapshot.docs.map(
         (doc) {
           return SiteFloorFileModel
               .fromMap(
-            doc.data()
-                as Map<String, dynamic>,
+            doc.data(),
             doc.id,
           );
         },
       ).toList();
-
-      return files;
     } catch (e) {
       return [];
     }
+  }
+
+  // ==============================
+  // REALTIME STREAM
+  // ==============================
+
+  Stream<List<SiteFloorFileModel>>
+      watchFiles(
+    String siteId,
+    int floorNo,
+  ) {
+    return _firebase
+        .siteFloorFiles
+        .where(
+          'site_id',
+          isEqualTo: siteId,
+        )
+        .where(
+          'floor_no',
+          isEqualTo: floorNo,
+        )
+        .orderBy(
+          'uploaded_at',
+          descending: true,
+        )
+        .snapshots()
+        .map(
+      (snapshot) {
+        return snapshot.docs.map(
+          (doc) {
+            return SiteFloorFileModel
+                .fromMap(
+              doc.data(),
+              doc.id,
+            );
+          },
+        ).toList();
+      },
+    );
   }
 
   // ==============================
@@ -59,7 +96,8 @@ class SiteFloorFileDao {
   ) async {
     try {
       final snapshot =
-          await _firebase.siteFloorFiles
+          await _firebase
+              .siteFloorFiles
               .where(
                 'site_id',
                 isEqualTo: siteId,
@@ -84,7 +122,9 @@ class SiteFloorFileDao {
     SiteFloorFileModel model,
   ) async {
     try {
-      await _firebase.siteFloorFiles.add(
+      await _firebase
+          .siteFloorFiles
+          .add(
         model.toMap(),
       );
     } catch (e) {
@@ -100,7 +140,8 @@ class SiteFloorFileDao {
     String id,
   ) async {
     try {
-      await _firebase.siteFloorFiles
+      await _firebase
+          .siteFloorFiles
           .doc(id)
           .delete();
     } catch (e) {

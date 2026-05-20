@@ -4,7 +4,6 @@ import 'attendance_day_page.dart';
 
 class AttendanceMonthPage
     extends StatelessWidget {
-
   final int year;
 
   const AttendanceMonthPage({
@@ -14,14 +13,12 @@ class AttendanceMonthPage
 
   static const List<String>
       monthNames = [
-
     'January',
     'February',
     'March',
     'April',
     'May',
     'June',
-
     'July',
     'August',
     'September',
@@ -32,28 +29,32 @@ class AttendanceMonthPage
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Year $year'),
+        title:
+            Text('Year $year'),
       ),
 
       body: ListView.builder(
+        padding:
+            const EdgeInsets.all(
+          12,
+        ),
 
         itemCount:
             monthNames.length,
 
         itemBuilder:
-            (context, index) {
-
+            (
+              context,
+              index,
+            ) {
           final month =
               monthNames[index];
 
           return Card(
             child: ListTile(
-
-              title:
-                  Text(month),
+              title: Text(month),
 
               trailing:
                   const Icon(
@@ -61,19 +62,15 @@ class AttendanceMonthPage
               ),
 
               onTap: () {
-
                 Navigator.push(
                   context,
 
                   MaterialPageRoute(
                     builder: (_) =>
                         AttendanceDayPage(
-
                       year: year,
-
                       monthIndex:
                           index,
-
                       monthName:
                           month,
                     ),

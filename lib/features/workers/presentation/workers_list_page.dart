@@ -17,61 +17,26 @@ class WorkersListPage extends StatefulWidget {
 
 class _WorkersListPageState
     extends State<WorkersListPage> {
-
   final WorkerDao _dao = WorkerDao();
-
-  List<WorkerModel> workers = [];
-
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    loadWorkers();
-  }
-
-  // ==============================
-  // LOAD WORKERS FROM FIRESTORE
-  // ==============================
-
-  Future<void> loadWorkers() async {
-    try {
-      final data = await _dao.getAllWorkers();
-
-      setState(() {
-        workers = data;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-
-      debugPrint(
-        'Error loading workers: $e',
-      );
-    }
-  }
-
-  // ==============================
-  // DELETE WORKER
-  // ==============================
 
   Future<void> deleteWorker(
     String workerId,
   ) async {
     try {
-      await _dao.deleteWorker(workerId);
+      await _dao.deleteWorker(
+        workerId,
+      );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
         const SnackBar(
-          content: Text('Worker deleted'),
+          content:
+              Text('Worker deleted'),
         ),
       );
-
-      loadWorkers();
     } catch (e) {
       debugPrint(
         'Delete error: $e',
@@ -79,14 +44,11 @@ class _WorkersListPageState
     }
   }
 
-  // ==============================
-  // CALL WORKER
-  // ==============================
-
   Future<void> callWorker(
     String phone,
   ) async {
-    final uri = Uri.parse('tel:$phone');
+    final uri =
+        Uri.parse('tel:$phone');
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
@@ -97,242 +59,250 @@ class _WorkersListPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workers'),
+        title:
+            const Text('Workers'),
       ),
-
-      // ==========================
-      // ADD WORKER BUTTON
-      // ==========================
 
       floatingActionButton:
           FloatingActionButton(
-        child: const Icon(Icons.add),
+        child:
+            const Icon(Icons.add),
 
         onPressed: () async {
-          final result =
-              await Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) =>
                   const AddWorkerPage(),
             ),
           );
-
-          if (result == true) {
-            loadWorkers();
-          }
         },
       ),
 
-      // ==========================
-      // BODY
-      // ==========================
+      body:
+          StreamBuilder<
+              List<WorkerModel>>(
+        stream:
+            _dao.watchWorkers(),
 
-      body: isLoading
-          ? const Center(
+        builder: (
+          context,
+          snapshot,
+        ) {
+          if (snapshot
+                  .connectionState ==
+              ConnectionState
+                  .waiting) {
+            return const Center(
               child:
                   CircularProgressIndicator(),
-            )
+            );
+          }
 
-          : workers.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No workers added',
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+              ),
+            );
+          }
+
+          final workers =
+              snapshot.data ?? [];
+
+          if (workers.isEmpty) {
+            return const Center(
+              child: Text(
+                'No workers added',
+              ),
+            );
+          }
+
+          return ListView.builder(
+            itemCount:
+                workers.length,
+
+            itemBuilder:
+                (
+                  context,
+                  index,
+                ) {
+              final worker =
+                  workers[index];
+
+              return Card(
+                margin:
+                    const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+
+                child: ListTile(
+                  leading:
+                      CircleAvatar(
+                    backgroundColor:
+                        Colors
+                            .deepPurple,
+
+                    child: Text(
+                      worker.name
+                              .isNotEmpty
+                          ? worker
+                              .name[0]
+                              .toUpperCase()
+                          : '?',
+
+                      style:
+                          const TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                )
 
-              : RefreshIndicator(
-                  onRefresh: loadWorkers,
+                  title: Text(
+                    worker.name,
 
-                  child: ListView.builder(
-                    itemCount: workers.length,
+                    style:
+                        const TextStyle(
+                      fontWeight:
+                          FontWeight
+                              .bold,
+                    ),
+                  ),
 
-                    itemBuilder:
-                        (context, index) {
+                  subtitle: Text(
+                    '${worker.workType} • '
+                    '${worker.state} • '
+                    '${worker.role}',
+                  ),
 
-                      final worker =
-                          workers[index];
+                  trailing: Row(
+                    mainAxisSize:
+                        MainAxisSize.min,
 
-                      return Card(
-                        margin:
-                            const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor:
-                                Colors.deepPurple,
-                            child: Text(
-                              worker.name
-                                  .isNotEmpty
-                                  ? worker.name[0]
-                                      .toUpperCase()
-                                  : '?',
-                              style:
-                                  const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-
-                          // ==================
-                          // WORKER NAME
-                          // ==================
-
-                          title: Text(
-                            worker.name,
-                            style:
-                                const TextStyle(
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
-
-                          // ==================
-                          // WORKER DETAILS
-                          // ==================
-
-                          subtitle: Text(
-                            '${worker.workType} • '
-                            '${worker.state} • '
-                            '${worker.role}',
-                          ),
-
-                          // ==================
-                          // ACTION BUTTONS
-                          // ==================
-
-                          trailing: Row(
-                            mainAxisSize:
-                                MainAxisSize.min,
-
-                            children: [
-
-                              // CALL BUTTON
-                              if (worker.phone
-                                  .isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.call,
-                                    color:
-                                        Colors.green,
-                                  ),
-
-                                  onPressed: () {
-                                    callWorker(
-                                      worker.phone,
-                                    );
-                                  },
-                                ),
-
-                              // DELETE BUTTON
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-
-                                onPressed: () async {
-
-                                  final confirm =
-                                      await showDialog<bool>(
-                                    context:
-                                        context,
-
-                                    builder:
-                                        (context) {
-                                      return AlertDialog(
-                                        title:
-                                            const Text(
-                                          'Delete Worker',
-                                        ),
-
-                                        content:
-                                            const Text(
-                                          'Are you sure?',
-                                        ),
-
-                                        actions: [
-
-                                          TextButton(
-                                            onPressed:
-                                                () {
-                                              Navigator.pop(
-                                                context,
-                                                false,
-                                              );
-                                            },
-
-                                            child:
-                                                const Text(
-                                              'Cancel',
-                                            ),
-                                          ),
-
-                                          TextButton(
-                                            onPressed:
-                                                () {
-                                              Navigator.pop(
-                                                context,
-                                                true,
-                                              );
-                                            },
-
-                                            child:
-                                                const Text(
-                                              'Delete',
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-
-                                  if (confirm ==
-                                      true) {
-
-                                    if (worker.id !=
-                                        null) {
-
-                                      deleteWorker(
-                                        worker.id!,
-                                      );
-                                    }
-                                  }
-                                },
-                              ),
-
+                    children: [
+                      if (worker.phone
+                          .isNotEmpty)
+                        IconButton(
+                          icon:
                               const Icon(
-                                Icons
-                                    .arrow_forward_ios,
-                                size: 16,
-                              ),
-                            ],
+                            Icons.call,
+                            color: Colors
+                                .green,
                           ),
 
-                          // ==================
-                          // OPEN DETAILS PAGE
-                          // ==================
-
-                          onTap: () {
-                            Navigator.push(
-                              context,
-
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    WorkerDetailsPage(
-                                  worker: worker,
-                                ),
-                              ),
+                          onPressed:
+                              () {
+                            callWorker(
+                              worker
+                                  .phone,
                             );
                           },
                         ),
-                      );
-                    },
+
+                      IconButton(
+                        icon:
+                            const Icon(
+                          Icons.delete,
+                          color:
+                              Colors.red,
+                        ),
+
+                        onPressed:
+                            () async {
+                          final confirm =
+                              await showDialog<bool>(
+                            context:
+                                context,
+
+                            builder:
+                                (
+                                  context,
+                                ) {
+                              return AlertDialog(
+                                title:
+                                    const Text(
+                                  'Delete Worker',
+                                ),
+
+                                content:
+                                    const Text(
+                                  'Are you sure?',
+                                ),
+
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () {
+                                      Navigator.pop(
+                                        context,
+                                        false,
+                                      );
+                                    },
+
+                                    child:
+                                        const Text(
+                                      'Cancel',
+                                    ),
+                                  ),
+
+                                  TextButton(
+                                    onPressed:
+                                        () {
+                                      Navigator.pop(
+                                        context,
+                                        true,
+                                      );
+                                    },
+
+                                    child:
+                                        const Text(
+                                      'Delete',
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm ==
+                                  true &&
+                              worker.id !=
+                                  null) {
+                            deleteWorker(
+                              worker.id!,
+                            );
+                          }
+                        },
+                      ),
+
+                      const Icon(
+                        Icons
+                            .arrow_forward_ios,
+                        size: 16,
+                      ),
+                    ],
                   ),
+
+                  onTap: () {
+                    Navigator.push(
+                      context,
+
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            WorkerDetailsPage(
+                          worker:
+                              worker,
+                        ),
+                      ),
+                    );
+                  },
                 ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
-} 
+}

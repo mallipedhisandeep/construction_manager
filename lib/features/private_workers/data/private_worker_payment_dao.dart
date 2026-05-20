@@ -1,21 +1,33 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/services/firebase_service.dart';
 
 import 'private_worker_payment_model.dart';
 
 class PrivateWorkerPaymentDao {
-  final _collection =
-      FirebaseFirestore.instance
-          .collection(
-    'private_worker_payments',
-  );
+  final FirebaseService _firebase =
+      FirebaseService.instance;
+
+  // ==============================
+  // COLLECTION
+  // ==============================
+
+  dynamic get _collection =>
+      _firebase.privateWorkerPayments;
+
+  // ==============================
+  // INSERT
+  // ==============================
 
   Future<void> insert(
-    PrivateWorkerPayment p,
+    PrivateWorkerPayment payment,
   ) async {
     await _collection.add(
-      p.toMap(),
+      payment.toMap(),
     );
   }
+
+  // ==============================
+  // GET BY WORKER
+  // ==============================
 
   Future<List<PrivateWorkerPayment>>
       getByWorker(
@@ -35,13 +47,25 @@ class PrivateWorkerPaymentDao {
 
     return snapshot.docs
         .map(
-          (e) =>
+          (doc) =>
               PrivateWorkerPayment
                   .fromMap(
-            e.data(),
-            e.id,
+            doc.data(),
+            doc.id,
           ),
         )
         .toList();
+  }
+
+  // ==============================
+  // DELETE
+  // ==============================
+
+  Future<void> delete(
+    String id,
+  ) async {
+    await _collection
+        .doc(id)
+        .delete();
   }
 }

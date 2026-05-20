@@ -1,26 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../core/services/firebase_service.dart';
 
 import 'attendance_model.dart';
 import 'attendance_month_summary.dart';
 
 class AttendanceDao {
-
   final FirebaseService _firebase =
       FirebaseService.instance;
 
-  // ==============================
+  // =========================
   // GET ATTENDANCE FOR DAY
-  // ==============================
+  // =========================
 
   Future<AttendanceModel?>
       getAttendanceForDay({
-
     required String workerId,
-
     required DateTime date,
-
   }) async {
-
     final dateKey =
         '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'
@@ -35,7 +32,7 @@ class AttendanceDao {
             )
 
             .where(
-              'date',
+              'date_key',
               isEqualTo: dateKey,
             )
 
@@ -51,27 +48,20 @@ class AttendanceDao {
         snapshot.docs.first;
 
     return AttendanceModel.fromMap(
-      doc.data()
-          as Map<String, dynamic>,
+      doc.data(),
       doc.id,
     );
   }
 
-  // ==============================
+  // =========================
   // GET BALANCE BEFORE DATE
-  // ==============================
+  // =========================
 
   Future<double>
       getBalanceBeforeDate(
     String workerId,
     DateTime date,
   ) async {
-
-    final dateKey =
-        '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
-
     final snapshot =
         await _firebase.attendance
 
@@ -82,7 +72,14 @@ class AttendanceDao {
 
             .where(
               'date',
-              isLessThan: dateKey,
+              isLessThan:
+                  Timestamp.fromDate(
+                DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                ),
+              ),
             )
 
             .orderBy(
@@ -99,22 +96,21 @@ class AttendanceDao {
     }
 
     final data =
-        snapshot.docs.first.data()
-            as Map<String, dynamic>;
+        snapshot.docs.first.data();
 
-    return (data['balance_after'] ?? 0)
+    return (data['balance_after'] ??
+            0)
         .toDouble();
   }
 
-  // ==============================
-  // SAVE OR UPDATE
-  // ==============================
+  // =========================
+  // SAVE / UPDATE
+  // =========================
 
   Future<void>
       saveOrUpdateAttendance(
     AttendanceModel attendance,
   ) async {
-
     final baseBalance =
         await getBalanceBeforeDate(
       attendance.workerId,
@@ -139,7 +135,7 @@ class AttendanceDao {
             )
 
             .where(
-              'date',
+              'date_key',
               isEqualTo:
                   corrected.dateKey,
             )
@@ -148,33 +144,37 @@ class AttendanceDao {
 
             .get();
 
-    // DELETE OLD
-    for (final doc
-        in existing.docs) {
+    if (existing.docs.isNotEmpty) {
+      final existingId =
+          existing.docs.first.id;
 
       await _firebase.attendance
-          .doc(doc.id)
-          .delete();
+          .doc(existingId)
+          .set(
+            corrected.toMap(),
+            SetOptions(
+              merge: true,
+            ),
+          );
+
+      return;
     }
 
-    // INSERT NEW
     await _firebase.attendance
-        .add(corrected.toMap());
+        .add(
+      corrected.toMap(),
+    );
   }
 
-  // ==============================
+  // =========================
   // AUTO ABSENT
-  // ==============================
+  // =========================
 
   Future<void>
       autoMarkAbsentIfMissed({
-
     required String workerId,
-
     required DateTime currentDate,
-
   }) async {
-
     if (currentDate.day == 1) {
       return;
     }
@@ -200,69 +200,66 @@ class AttendanceDao {
       prevDate,
     );
 
-    await _firebase.attendance.add({
+    final absent =
+        AttendanceModel(
+      workerId: workerId,
 
-      'worker_id': workerId,
+      siteId: null,
 
-      'site_id': null,
+      date: prevDate,
 
-      'date':
-          '${prevDate.year.toString().padLeft(4, '0')}-'
-          '${prevDate.month.toString().padLeft(2, '0')}-'
-          '${prevDate.day.toString().padLeft(2, '0')}',
-
-      'attendance_type':
+      attendanceType:
           'Absent',
 
-      'wage': 0,
+      wage: 0,
 
-      'advance': 0,
+      advance: 0,
 
-      'payment_mode':
+      paymentMode:
           'None',
 
-      'payment_ref': null,
+      paymentRef: null,
 
-      'balance_after':
+      balanceAfter:
           baseBalance,
-    });
+    );
+
+    await _firebase.attendance
+        .add(
+      absent.toMap(),
+    );
   }
 
-  // ==============================
+  // =========================
   // MONTHLY SUMMARY
-  // ==============================
+  // =========================
 
   Future<AttendanceMonthSummary>
       getMonthlySummary({
-
     required String workerId,
-
     required int year,
-
     required int month,
-
   }) async {
-
     final monthStart =
-        '$year-${month.toString().padLeft(2, '0')}-01';
-
-    final nextMonth =
-        month == 12
-            ? 1
-            : month + 1;
-
-    final nextYear =
-        month == 12
-            ? year + 1
-            : year;
+        DateTime(year, month, 1);
 
     final monthEnd =
-        '$nextYear-${nextMonth.toString().padLeft(2, '0')}-01';
+        month == 12
+            ? DateTime(
+                year + 1,
+                1,
+                1,
+              )
+            : DateTime(
+                year,
+                month + 1,
+                1,
+              );
 
     final openingBalance =
         await getBalanceBeforeDate(
       workerId,
-      DateTime(year, month, 1),
+      monthStart,
     );
 
     final snapshot =
@@ -276,13 +273,17 @@ class AttendanceDao {
             .where(
               'date',
               isGreaterThanOrEqualTo:
-                  monthStart,
+                  Timestamp.fromDate(
+                monthStart,
+              ),
             )
 
             .where(
               'date',
               isLessThan:
-                  monthEnd,
+                  Timestamp.fromDate(
+                monthEnd,
+              ),
             )
 
             .get();
@@ -296,10 +297,8 @@ class AttendanceDao {
 
     for (final doc
         in snapshot.docs) {
-
       final r =
-          doc.data()
-              as Map<String, dynamic>;
+          doc.data();
 
       final type =
           r['attendance_type']
@@ -323,7 +322,6 @@ class AttendanceDao {
             advance;
 
     return AttendanceMonthSummary(
-
       daysByType:
           daysByType,
 

@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,9 +9,12 @@ import '../../../core/services/storage_service.dart';
 
 import '../data/site_agreement_dao.dart';
 import '../data/site_agreement_model.dart';
+
 import '../data/site_dao.dart';
+
 import '../data/site_elevation_dao.dart';
 import '../data/site_elevation_model.dart';
+
 import '../data/site_model.dart';
 
 import 'floor_files_page.dart';
@@ -31,7 +35,6 @@ class SiteDetailsPage extends StatefulWidget {
 
 class _SiteDetailsPageState
     extends State<SiteDetailsPage> {
-
   final SiteDao _dao = SiteDao();
 
   final SiteAgreementDao _agreementDao =
@@ -40,30 +43,14 @@ class _SiteDetailsPageState
   final SiteElevationDao _elevationDao =
       SiteElevationDao();
 
-  late Future<List<SiteElevationModel>>
-      _elevationFuture;
-
   bool isDeleting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadElevations();
-  }
-
-  void _loadElevations() {
-
-    _elevationFuture =
-        _elevationDao.getBySite(
-      widget.site.id!,
-    );
-  }
-
   Future<PlatformFile?> pickFile() async {
-
     final result =
         await FilePicker.platform
-            .pickFiles();
+            .pickFiles(
+      withData: true,
+    );
 
     if (result == null) {
       return null;
@@ -72,29 +59,38 @@ class _SiteDetailsPageState
     return result.files.single;
   }
 
+  String _formatTimestamp(
+    Timestamp? timestamp,
+  ) {
+    if (timestamp == null) {
+      return '-';
+    }
+
+    final date =
+        timestamp.toDate();
+
+    return
+        '${date.day}/${date.month}/${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
-
     final site = widget.site;
 
     return Scaffold(
-
       appBar: AppBar(
         title: Text(site.siteName),
       ),
 
       body: SingleChildScrollView(
-
         padding:
             const EdgeInsets.all(16),
 
         child: Column(
-
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
-
             _row(
               'Location',
               site.location,
@@ -139,7 +135,6 @@ class _SiteDetailsPageState
             // ======================
 
             const Text(
-
               'Agreements',
 
               style: TextStyle(
@@ -151,50 +146,43 @@ class _SiteDetailsPageState
 
             const SizedBox(height: 10),
 
-            FutureBuilder<
+            StreamBuilder<
                 List<SiteAgreementModel>>(
-
-              future:
+              stream:
                   _agreementDao
-                      .getBySite(
+                      .watchBySite(
                 site.id!,
               ),
 
               builder:
                   (_, snapshot) {
-
                 if (snapshot
                         .connectionState ==
-                    ConnectionState.waiting) {
-
+                    ConnectionState
+                        .waiting) {
                   return const Center(
                     child:
                         CircularProgressIndicator(),
                   );
                 }
 
-                if (!snapshot.hasData ||
-                    snapshot.data!.isEmpty) {
+                final list =
+                    snapshot.data ??
+                        [];
 
+                if (list.isEmpty) {
                   return const Text(
                     'No agreements added',
                   );
                 }
 
-                final list =
-                    snapshot.data!;
-
                 return Column(
-
                   children:
                       list.map(
                     (agreement) {
-
                       return Card(
-
                         child:
                             ListTile(
-
                           leading:
                               const Icon(
                             Icons.description,
@@ -205,13 +193,14 @@ class _SiteDetailsPageState
                           ),
 
                           subtitle: Text(
-                            agreement.createdAt,
+                            _formatTimestamp(
+                              agreement
+                                  .createdAt,
+                            ),
                           ),
 
                           onTap: () async {
-
                             await launchUrl(
-
                               Uri.parse(
                                 agreement.filePath,
                               ),
@@ -223,14 +212,11 @@ class _SiteDetailsPageState
 
                           trailing:
                               Row(
-
                             mainAxisSize:
                                 MainAxisSize.min,
 
                             children: [
-
                               IconButton(
-
                                 icon:
                                     const Icon(
                                   Icons.open_in_new,
@@ -238,9 +224,7 @@ class _SiteDetailsPageState
 
                                 onPressed:
                                     () async {
-
                                   await launchUrl(
-
                                     Uri.parse(
                                       agreement.filePath,
                                     ),
@@ -252,7 +236,6 @@ class _SiteDetailsPageState
                               ),
 
                               IconButton(
-
                                 icon:
                                     const Icon(
                                   Icons.delete,
@@ -262,7 +245,6 @@ class _SiteDetailsPageState
 
                                 onPressed:
                                     () async {
-
                                   await StorageService.instance
                                       .deleteFile(
                                     agreement.filePath,
@@ -272,12 +254,6 @@ class _SiteDetailsPageState
                                       .deleteAgreement(
                                     agreement.id!,
                                   );
-
-                                  if (!mounted) {
-                                    return;
-                                  }
-
-                                  setState(() {});
                                 },
                               ),
                             ],
@@ -293,7 +269,6 @@ class _SiteDetailsPageState
             const SizedBox(height: 10),
 
             ElevatedButton.icon(
-
               icon: const Icon(
                 Icons.upload_file,
               ),
@@ -313,7 +288,6 @@ class _SiteDetailsPageState
             // ======================
 
             const Text(
-
               'Floors',
 
               style: TextStyle(
@@ -326,7 +300,6 @@ class _SiteDetailsPageState
             const SizedBox(height: 10),
 
             ListView.builder(
-
               shrinkWrap: true,
 
               physics:
@@ -337,16 +310,13 @@ class _SiteDetailsPageState
 
               itemBuilder:
                   (_, i) {
-
                 final floorName =
                     i == 0
                         ? 'Ground Floor'
                         : '$i Floor';
 
                 return Card(
-
                   child: ListTile(
-
                     title:
                         Text(
                       floorName,
@@ -358,22 +328,16 @@ class _SiteDetailsPageState
                     ),
 
                     onTap: () {
-
                       Navigator.push(
-
                         context,
 
                         MaterialPageRoute(
-
                           builder: (_) =>
                               FloorFilesPage(
-
                             siteId:
                                 site.id!,
-
                             floorNo:
                                 i,
-
                             floorName:
                                 floorName,
                           ),
@@ -392,7 +356,6 @@ class _SiteDetailsPageState
             // ======================
 
             const Text(
-
               'Elevations',
 
               style: TextStyle(
@@ -404,47 +367,43 @@ class _SiteDetailsPageState
 
             const SizedBox(height: 10),
 
-            FutureBuilder<
+            StreamBuilder<
                 List<SiteElevationModel>>(
-
-              future:
-                  _elevationFuture,
+              stream:
+                  _elevationDao
+                      .watchBySite(
+                site.id!,
+              ),
 
               builder:
                   (_, snapshot) {
-
                 if (snapshot
                         .connectionState ==
-                    ConnectionState.waiting) {
-
+                    ConnectionState
+                        .waiting) {
                   return const Center(
                     child:
                         CircularProgressIndicator(),
                   );
                 }
 
-                if (!snapshot.hasData ||
-                    snapshot.data!.isEmpty) {
+                final list =
+                    snapshot.data ??
+                        [];
 
+                if (list.isEmpty) {
                   return const Text(
                     'No elevations added',
                   );
                 }
 
-                final list =
-                    snapshot.data!;
-
                 return Column(
-
                   children:
                       list.map(
                     (elevation) {
-
                       return Card(
-
                         child:
                             ListTile(
-
                           leading:
                               const Icon(
                             Icons.image,
@@ -455,13 +414,14 @@ class _SiteDetailsPageState
                           ),
 
                           subtitle: Text(
-                            elevation.createdAt,
+                            _formatTimestamp(
+                              elevation
+                                  .createdAt,
+                            ),
                           ),
 
                           onTap: () async {
-
                             await launchUrl(
-
                               Uri.parse(
                                 elevation.filePath,
                               ),
@@ -473,14 +433,11 @@ class _SiteDetailsPageState
 
                           trailing:
                               Row(
-
                             mainAxisSize:
                                 MainAxisSize.min,
 
                             children: [
-
                               IconButton(
-
                                 icon:
                                     const Icon(
                                   Icons.open_in_new,
@@ -488,9 +445,7 @@ class _SiteDetailsPageState
 
                                 onPressed:
                                     () async {
-
                                   await launchUrl(
-
                                     Uri.parse(
                                       elevation.filePath,
                                     ),
@@ -502,7 +457,6 @@ class _SiteDetailsPageState
                               ),
 
                               IconButton(
-
                                 icon:
                                     const Icon(
                                   Icons.delete,
@@ -512,7 +466,6 @@ class _SiteDetailsPageState
 
                                 onPressed:
                                     () async {
-
                                   await StorageService.instance
                                       .deleteFile(
                                     elevation.filePath,
@@ -521,14 +474,6 @@ class _SiteDetailsPageState
                                   await _elevationDao
                                       .delete(
                                     elevation.id!,
-                                  );
-
-                                  if (!mounted) {
-                                    return;
-                                  }
-
-                                  setState(
-                                    _loadElevations,
                                   );
                                 },
                               ),
@@ -545,7 +490,6 @@ class _SiteDetailsPageState
             const SizedBox(height: 10),
 
             ElevatedButton.icon(
-
               icon: const Icon(
                 Icons.add,
               ),
@@ -556,7 +500,6 @@ class _SiteDetailsPageState
 
               onPressed:
                   () async {
-
                 final picked =
                     await pickFile();
 
@@ -564,27 +507,22 @@ class _SiteDetailsPageState
                   return;
                 }
 
-                if (picked.path == null) {
+                final Uint8List? bytes =
+                    picked.bytes;
+
+                if (bytes == null) {
                   return;
                 }
-
-                final file =
-                    File(
-                  picked.path!,
-                );
 
                 final firebaseFileName =
                     '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
 
                 final url =
                     await StorageService.instance
-                        .uploadFile(
-
-                  file: file,
-
+                        .uploadWebFile(
+                  bytes: bytes,
                   folder:
                       'elevations',
-
                   fileName:
                       firebaseFileName,
                 );
@@ -595,42 +533,23 @@ class _SiteDetailsPageState
 
                 await _elevationDao
                     .insert(
-
                   SiteElevationModel(
-
                     siteId:
                         widget.site.id!,
-
                     fileName:
                         picked.name,
-
                     filePath:
                         url,
-
                     createdAt:
-                        DateTime.now()
-                            .toIso8601String(),
+                        Timestamp.now(),
                   ),
-                );
-
-                if (!mounted) {
-                  return;
-                }
-
-                setState(
-                  _loadElevations,
                 );
               },
             ),
 
             const SizedBox(height: 30),
 
-            // ======================
-            // EDIT SITE
-            // ======================
-
             ElevatedButton.icon(
-
               icon: const Icon(
                 Icons.edit,
               ),
@@ -641,15 +560,12 @@ class _SiteDetailsPageState
 
               onPressed:
                   () async {
-
                 final navigator =
                     Navigator.of(context);
 
                 final changed =
                     await navigator.push(
-
                   MaterialPageRoute(
-
                     builder: (_) =>
                         SiteFormPage(
                       site: site,
@@ -662,7 +578,6 @@ class _SiteDetailsPageState
                 }
 
                 if (changed == true) {
-
                   navigator.pop(
                     true,
                   );
@@ -672,22 +587,15 @@ class _SiteDetailsPageState
 
             const SizedBox(height: 10),
 
-            // ======================
-            // DELETE SITE
-            // ======================
-
             ElevatedButton.icon(
-
               icon: const Icon(
                 Icons.delete,
               ),
 
               label: isDeleting
-
                   ? const Text(
                       'Deleting...',
                     )
-
                   : const Text(
                       'Delete Site',
                     ),
@@ -710,15 +618,12 @@ class _SiteDetailsPageState
   }
 
   Future<void> _deleteSite() async {
-
     final confirm =
         await showDialog<bool>(
-
       context: context,
 
       builder: (_) =>
           AlertDialog(
-
         title:
             const Text(
           'Delete Site',
@@ -730,11 +635,8 @@ class _SiteDetailsPageState
         ),
 
         actions: [
-
           TextButton(
-
             onPressed: () {
-
               Navigator.pop(
                 context,
                 false,
@@ -748,9 +650,7 @@ class _SiteDetailsPageState
           ),
 
           ElevatedButton(
-
             onPressed: () {
-
               Navigator.pop(
                 context,
                 true,
@@ -775,7 +675,6 @@ class _SiteDetailsPageState
     });
 
     try {
-
       await _dao.deleteSite(
         widget.site.id!,
       );
@@ -788,9 +687,7 @@ class _SiteDetailsPageState
         context,
         true,
       );
-
     } catch (e) {
-
       debugPrint(
         'DELETE SITE ERROR => $e',
       );
@@ -802,18 +699,14 @@ class _SiteDetailsPageState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(
-
         SnackBar(
           content: Text(
             'Error: $e',
           ),
         ),
       );
-
     } finally {
-
       if (mounted) {
-
         setState(() {
           isDeleting = false;
         });
@@ -822,13 +715,11 @@ class _SiteDetailsPageState
   }
 
   Future<void> _addAgreement() async {
-
     final result =
         await FilePicker.platform
             .pickFiles(
-
+      withData: true,
       type: FileType.custom,
-
       allowedExtensions: [
         'pdf',
         'jpg',
@@ -844,24 +735,21 @@ class _SiteDetailsPageState
     final picked =
         result.files.first;
 
-    if (picked.path == null) {
+    final Uint8List? bytes =
+        picked.bytes;
+
+    if (bytes == null) {
       return;
     }
-
-    final file =
-        File(picked.path!);
 
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
 
     final url =
         await StorageService.instance
-            .uploadFile(
-
-      file: file,
-
+            .uploadWebFile(
+      bytes: bytes,
       folder: 'agreements',
-
       fileName: fileName,
     );
 
@@ -871,47 +759,32 @@ class _SiteDetailsPageState
 
     final agreement =
         SiteAgreementModel(
-
       siteId:
           widget.site.id!,
-
-      filePath:
-          url,
-
+      filePath: url,
       fileName:
           picked.name,
-
       createdAt:
-          DateTime.now()
-              .toIso8601String(),
+          Timestamp.now(),
     );
 
     await _agreementDao
         .insertAgreement(
       agreement,
     );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {});
   }
 
   Widget _row(
     String label,
     String? value,
   ) {
-
     return Padding(
-
       padding:
           const EdgeInsets.symmetric(
         vertical: 4,
       ),
 
       child: Text(
-
         '$label : ${value ?? '-'}',
 
         style:
@@ -923,13 +796,11 @@ class _SiteDetailsPageState
   }
 
   Widget _ownerPhoneRow() {
-
     final phone =
         widget.site.ownerPhone;
 
     if (phone == null ||
         phone.isEmpty) {
-
       return _row(
         'Owner Phone',
         '-',
@@ -937,20 +808,15 @@ class _SiteDetailsPageState
     }
 
     return Padding(
-
       padding:
           const EdgeInsets.symmetric(
         vertical: 6,
       ),
 
       child: Row(
-
         children: [
-
           Expanded(
-
             child: Text(
-
               'Owner Phone : $phone',
 
               style:
@@ -961,7 +827,6 @@ class _SiteDetailsPageState
           ),
 
           IconButton(
-
             icon:
                 const Icon(
               Icons.call,
@@ -970,7 +835,6 @@ class _SiteDetailsPageState
 
             onPressed:
                 () async {
-
               final uri =
                   Uri.parse(
                 'tel:$phone',

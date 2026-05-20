@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
@@ -13,18 +11,20 @@ class StorageService {
       FirebaseStorage.instance;
 
   // ==============================
-  // UPLOAD FILE
+  // WEB FILE UPLOAD
   // ==============================
 
-  Future<String?> uploadFile({
-    required File file,
+  Future<String?> uploadWebFile({
+    required Uint8List bytes,
     required String folder,
     required String fileName,
   }) async {
     try {
-
       final cleanFileName =
-          fileName.replaceAll(' ', '_');
+          fileName.replaceAll(
+        ' ',
+        '_',
+      );
 
       final ref = _storage
           .ref()
@@ -32,25 +32,21 @@ class StorageService {
           .child(cleanFileName);
 
       final metadata = SettableMetadata(
-        contentType: _getContentType(
+        contentType:
+            _getContentType(
           cleanFileName,
         ),
       );
 
-      await ref.putFile(
-        file,
+      await ref.putData(
+        bytes,
         metadata,
       );
 
-      final url =
-          await ref.getDownloadURL();
-
-      return url;
-
+      return await ref.getDownloadURL();
     } catch (e) {
-
       debugPrint(
-        'UPLOAD ERROR => $e',
+        'WEB UPLOAD ERROR => $e',
       );
 
       return null;
@@ -65,7 +61,6 @@ class StorageService {
     String url,
   ) async {
     try {
-
       if (url.isEmpty) {
         return;
       }
@@ -73,9 +68,7 @@ class StorageService {
       await _storage
           .refFromURL(url)
           .delete();
-
     } catch (e) {
-
       debugPrint(
         'DELETE FILE ERROR => $e',
       );

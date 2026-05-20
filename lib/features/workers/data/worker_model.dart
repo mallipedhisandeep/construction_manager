@@ -1,21 +1,35 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class WorkerModel {
   final String? id;
 
   final String name;
+
   final String phone;
+
   final String gender;
+
   final String state;
+
   final String role;
+
   final String workType;
 
   final double rate6to6;
+
   final double rate10to6;
+
   final double rate6to10;
+
   final double rate6to2;
+
   final double rate10to2;
+
   final double rate2to6;
 
   final String? notes;
+
+  final Timestamp createdAt;
 
   WorkerModel({
     this.id,
@@ -32,33 +46,51 @@ class WorkerModel {
     required this.rate10to2,
     required this.rate2to6,
     this.notes,
-  });
+    Timestamp? createdAt,
+  }) : createdAt =
+           createdAt ??
+           Timestamp.now();
 
-  // ==============================
-  // FIRESTORE MAP
-  // ==============================
+  // =========================
+  // TO MAP
+  // =========================
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
+
       'phone': phone,
+
       'gender': gender,
+
       'state': state,
+
       'role': role,
+
       'work_type': workType,
+
       'rate_6_6': rate6to6,
+
       'rate_10_6': rate10to6,
+
       'rate_6_10': rate6to10,
+
       'rate_6_2': rate6to2,
+
       'rate_10_2': rate10to2,
+
       'rate_2_6': rate2to6,
+
       'notes': notes,
+
+      'created_at':
+          createdAt,
     };
   }
 
-  // ==============================
-  // FIRESTORE MAP → MODEL
-  // ==============================
+  // =========================
+  // FROM MAP
+  // =========================
 
   factory WorkerModel.fromMap(
     Map<String, dynamic> map,
@@ -66,19 +98,55 @@ class WorkerModel {
   ) {
     return WorkerModel(
       id: documentId,
-      name: map['name'] ?? '',
-      phone: map['phone'] ?? '',
-      gender: map['gender'] ?? '',
-      state: map['state'] ?? '',
-      role: map['role'] ?? '',
-      workType: map['work_type'] ?? '',
-      rate6to6: (map['rate_6_6'] ?? 0).toDouble(),
-      rate10to6: (map['rate_10_6'] ?? 0).toDouble(),
-      rate6to10: (map['rate_6_10'] ?? 0).toDouble(),
-      rate6to2: (map['rate_6_2'] ?? 0).toDouble(),
-      rate10to2: (map['rate_10_2'] ?? 0).toDouble(),
-      rate2to6: (map['rate_2_6'] ?? 0).toDouble(),
-      notes: map['notes'],
+
+      name:
+          map['name'] ?? '',
+
+      phone:
+          map['phone'] ?? '',
+
+      gender:
+          map['gender'] ?? '',
+
+      state:
+          map['state'] ?? '',
+
+      role:
+          map['role'] ?? '',
+
+      workType:
+          map['work_type'] ?? '',
+
+      rate6to6:
+          (map['rate_6_6'] ?? 0)
+              .toDouble(),
+
+      rate10to6:
+          (map['rate_10_6'] ?? 0)
+              .toDouble(),
+
+      rate6to10:
+          (map['rate_6_10'] ?? 0)
+              .toDouble(),
+
+      rate6to2:
+          (map['rate_6_2'] ?? 0)
+              .toDouble(),
+
+      rate10to2:
+          (map['rate_10_2'] ?? 0)
+              .toDouble(),
+
+      rate2to6:
+          (map['rate_2_6'] ?? 0)
+              .toDouble(),
+
+      notes:
+          map['notes'],
+
+      createdAt:
+          map['created_at'] ??
+              Timestamp.now(),
     );
   }
 }

@@ -1,4 +1,5 @@
 import '../../../core/services/firebase_service.dart';
+
 import 'site_agreement_model.dart';
 
 class SiteAgreementDao {
@@ -13,7 +14,8 @@ class SiteAgreementDao {
     SiteAgreementModel agreement,
   ) async {
     try {
-      await _firebase.siteAgreements.add(
+      await _firebase.siteAgreements
+          .add(
         agreement.toMap(),
       );
     } catch (e) {
@@ -31,7 +33,8 @@ class SiteAgreementDao {
   ) async {
     try {
       final snapshot =
-          await _firebase.siteAgreements
+          await _firebase
+              .siteAgreements
               .where(
                 'site_id',
                 isEqualTo: siteId,
@@ -42,22 +45,52 @@ class SiteAgreementDao {
               )
               .get();
 
-      final agreements =
-          snapshot.docs.map(
+      return snapshot.docs.map(
         (doc) {
           return SiteAgreementModel
               .fromMap(
-            doc.data()
-                as Map<String, dynamic>,
+            doc.data(),
             doc.id,
           );
         },
       ).toList();
-
-      return agreements;
     } catch (e) {
       return [];
     }
+  }
+
+  // ==============================
+  // REALTIME STREAM
+  // ==============================
+
+  Stream<List<SiteAgreementModel>>
+      watchBySite(
+    String siteId,
+  ) {
+    return _firebase
+        .siteAgreements
+        .where(
+          'site_id',
+          isEqualTo: siteId,
+        )
+        .orderBy(
+          'created_at',
+          descending: true,
+        )
+        .snapshots()
+        .map(
+      (snapshot) {
+        return snapshot.docs.map(
+          (doc) {
+            return SiteAgreementModel
+                .fromMap(
+              doc.data(),
+              doc.id,
+            );
+          },
+        ).toList();
+      },
+    );
   }
 
   // ==============================
@@ -68,7 +101,8 @@ class SiteAgreementDao {
     String id,
   ) async {
     try {
-      await _firebase.siteAgreements
+      await _firebase
+          .siteAgreements
           .doc(id)
           .delete();
     } catch (e) {

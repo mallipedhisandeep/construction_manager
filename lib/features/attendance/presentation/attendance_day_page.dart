@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../workers/data/worker_model.dart';
-import '../../workers/data/worker_dao.dart';
-
-import '../../sites/data/site_model.dart';
 import '../../sites/data/site_dao.dart';
+import '../../sites/data/site_model.dart';
+
+import '../../workers/data/worker_dao.dart';
+import '../../workers/data/worker_model.dart';
 
 import '../data/attendance_dao.dart';
 import '../data/attendance_model.dart';
 import '../data/attendance_month_summary.dart';
 
-class AttendanceDayPage extends StatefulWidget {
-
+class AttendanceDayPage
+    extends StatefulWidget {
   final int year;
 
   final int monthIndex;
@@ -26,13 +26,14 @@ class AttendanceDayPage extends StatefulWidget {
   });
 
   @override
-  State<AttendanceDayPage> createState() =>
-      _AttendanceDayPageState();
+  State<AttendanceDayPage>
+      createState() =>
+          _AttendanceDayPageState();
 }
 
 class _AttendanceDayPageState
-    extends State<AttendanceDayPage> {
-
+    extends State<
+        AttendanceDayPage> {
   int selectedDay = 1;
 
   final WorkerDao _workerDao =
@@ -41,10 +42,9 @@ class _AttendanceDayPageState
   final SiteDao _siteDao =
       SiteDao();
 
-  final AttendanceDao _attendanceDao =
+  final AttendanceDao
+      _attendanceDao =
       AttendanceDao();
-
-  List<WorkerModel> workers = [];
 
   List<SiteModel> sites = [];
 
@@ -56,34 +56,21 @@ class _AttendanceDayPageState
 
     _fixSelectedDay();
 
-    loadData();
+    loadSites();
   }
 
-  // ==============================
-  // LOAD DATA
-  // ==============================
-
-  Future<void> loadData() async {
-
+  Future<void> loadSites() async {
     try {
-
-      final loadedWorkers =
-          await _workerDao.getAllWorkers();
-
       final loadedSites =
-          await _siteDao.getAllSites();
+          await _siteDao
+              .getAllSites();
 
       setState(() {
-
-        workers = loadedWorkers;
-
         sites = loadedSites;
 
         isLoading = false;
       });
-
     } catch (e) {
-
       debugPrint(
         'Attendance load error: $e',
       );
@@ -94,12 +81,7 @@ class _AttendanceDayPageState
     }
   }
 
-  // ==============================
-  // FIX DAY
-  // ==============================
-
   void _fixSelectedDay() {
-
     final maxDay =
         DateUtils.getDaysInMonth(
       widget.year,
@@ -111,17 +93,11 @@ class _AttendanceDayPageState
     }
   }
 
-  // ==============================
-  // WAGE CALCULATION
-  // ==============================
-
   double _wage(
     WorkerModel worker,
     String type,
   ) {
-
     switch (type) {
-
       case '6-6':
         return worker.rate6to6;
 
@@ -145,39 +121,22 @@ class _AttendanceDayPageState
     }
   }
 
-  // ==============================
-  // BALANCE TEXT
-  // ==============================
-
   String getBalanceText(
     double balance,
   ) {
-
     if (balance > 0) {
-
-      return
-          'Balance to be given : '
+      return 'Balance to be given : '
           '₹${balance.toStringAsFixed(0)}';
-
     } else if (balance < 0) {
-
-      return
-          'Balance to be recieved : '
+      return 'Balance to be recieved : '
           '₹${balance.abs().toStringAsFixed(0)}';
-
     } else {
-
       return 'All settled';
     }
   }
 
-  // ==============================
-  // UI
-  // ==============================
-
   @override
   Widget build(BuildContext context) {
-
     _fixSelectedDay();
 
     final totalDays =
@@ -187,59 +146,53 @@ class _AttendanceDayPageState
     );
 
     return Scaffold(
-
       appBar: AppBar(
         title: Text(
-          '${widget.monthName} '
-          '${widget.year}',
+          '${widget.monthName} ${widget.year}',
         ),
       ),
 
       body: isLoading
-
           ? const Center(
               child:
                   CircularProgressIndicator(),
             )
-
           : Row(
               children: [
-
-                // ==================
-                // LEFT DAYS
-                // ==================
-
                 SizedBox(
                   width: 70,
 
                   child: ListView.builder(
-
-                    itemCount: totalDays,
+                    itemCount:
+                        totalDays,
 
                     itemBuilder:
-                        (context, index) {
-
+                        (
+                          context,
+                          index,
+                        ) {
                       final day =
                           index + 1;
 
                       return Padding(
-
                         padding:
                             const EdgeInsets.symmetric(
                           vertical: 4,
                         ),
 
-                        child: ChoiceChip(
-
+                        child:
+                            ChoiceChip(
                           label:
-                              Text('$day'),
+                              Text(
+                            '$day',
+                          ),
 
                           selected:
                               selectedDay ==
                                   day,
 
-                          onSelected: (_) {
-
+                          onSelected:
+                              (_) {
                             setState(() {
                               selectedDay =
                                   day;
@@ -255,19 +208,58 @@ class _AttendanceDayPageState
                   width: 1,
                 ),
 
-                // ==================
-                // RIGHT WORKERS
-                // ==================
-
                 Expanded(
-                  child: RefreshIndicator(
+                  child:
+                      StreamBuilder<
+                          List<
+                              WorkerModel>>(
+                    stream:
+                        _workerDao
+                            .watchWorkers(),
 
-                    onRefresh: loadData,
+                    builder: (
+                      context,
+                      snapshot,
+                    ) {
+                      if (snapshot
+                              .connectionState ==
+                          ConnectionState
+                              .waiting) {
+                        return const Center(
+                          child:
+                              CircularProgressIndicator(),
+                        );
+                      }
 
-                    child: ListView(
-                      children:
-                          _buildGroupedWorkers(),
-                    ),
+                      if (snapshot
+                          .hasError) {
+                        return Center(
+                          child: Text(
+                            'Error: ${snapshot.error}',
+                          ),
+                        );
+                      }
+
+                      final workers =
+                          snapshot.data ??
+                              [];
+
+                      if (workers
+                          .isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No workers found',
+                          ),
+                        );
+                      }
+
+                      return ListView(
+                        children:
+                            _buildGroupedWorkers(
+                          workers,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -275,13 +267,11 @@ class _AttendanceDayPageState
     );
   }
 
-  // ==============================
-  // GROUP WORKERS
-  // ==============================
-
   List<Widget>
-      _buildGroupedWorkers() {
-
+      _buildGroupedWorkers(
+    List<WorkerModel>
+        workers,
+  ) {
     final workTypes = [
       'Centring',
       'Brickwork',
@@ -301,7 +291,6 @@ class _AttendanceDayPageState
     List<Widget> widgets = [];
 
     for (final wt in workTypes) {
-
       final wtWorkers =
           workers.where(
         (w) =>
@@ -316,15 +305,17 @@ class _AttendanceDayPageState
         _title(wt),
       );
 
-      for (final state in states) {
-
+      for (final state
+          in states) {
         final stateWorkers =
             wtWorkers.where(
           (w) =>
-              w.state == state,
+              w.state ==
+              state,
         ).toList();
 
-        if (stateWorkers.isEmpty) {
+        if (stateWorkers
+            .isEmpty) {
           continue;
         }
 
@@ -332,21 +323,22 @@ class _AttendanceDayPageState
           _subtitle(state),
         );
 
-        for (final role in roles) {
-
+        for (final role
+            in roles) {
           final roleWorkers =
               stateWorkers.where(
             (w) =>
-                w.role == role,
+                w.role ==
+                role,
           ).toList();
 
-          if (roleWorkers.isEmpty) {
+          if (roleWorkers
+              .isEmpty) {
             continue;
           }
 
           widgets.add(
             Padding(
-
               padding:
                   const EdgeInsets.only(
                 left: 16,
@@ -359,7 +351,8 @@ class _AttendanceDayPageState
                 style:
                     const TextStyle(
                   fontWeight:
-                      FontWeight.bold,
+                      FontWeight
+                          .bold,
                 ),
               ),
             ),
@@ -367,9 +360,10 @@ class _AttendanceDayPageState
 
           for (final worker
               in roleWorkers) {
-
             widgets.add(
-              _workerTile(worker),
+              _workerTile(
+                worker,
+              ),
             );
           }
         }
@@ -379,22 +373,18 @@ class _AttendanceDayPageState
     return widgets;
   }
 
-  // ==============================
-  // TITLES
-  // ==============================
-
-  Widget _title(String title) {
-
+  Widget _title(
+    String title,
+  ) {
     return Padding(
-
       padding:
           const EdgeInsets.all(8),
 
       child: Text(
-
         title,
 
-        style: const TextStyle(
+        style:
+            const TextStyle(
           fontSize: 18,
           fontWeight:
               FontWeight.bold,
@@ -403,10 +393,10 @@ class _AttendanceDayPageState
     );
   }
 
-  Widget _subtitle(String title) {
-
+  Widget _subtitle(
+    String title,
+  ) {
     return Padding(
-
       padding:
           const EdgeInsets.symmetric(
         horizontal: 12,
@@ -414,10 +404,10 @@ class _AttendanceDayPageState
       ),
 
       child: Text(
-
         title,
 
-        style: const TextStyle(
+        style:
+            const TextStyle(
           fontSize: 16,
           fontWeight:
               FontWeight.w600,
@@ -426,16 +416,10 @@ class _AttendanceDayPageState
     );
   }
 
-  // ==============================
-  // WORKER TILE
-  // ==============================
-
   Widget _workerTile(
     WorkerModel worker,
   ) {
-
     return Card(
-
       margin:
           const EdgeInsets.symmetric(
         horizontal: 12,
@@ -443,7 +427,6 @@ class _AttendanceDayPageState
       ),
 
       child: ListTile(
-
         title:
             Text(worker.name),
 
@@ -457,32 +440,29 @@ class _AttendanceDayPageState
               MainAxisSize.min,
 
           children: [
-
-            // MONTH SUMMARY
             IconButton(
-
-              icon: const Icon(
+              icon:
+                  const Icon(
                 Icons.bar_chart,
               ),
 
               onPressed: () {
-
                 _openMonthlySummary(
                   worker,
                 );
               },
             ),
 
-            // EDIT
             IconButton(
-
-              icon: const Icon(
+              icon:
+                  const Icon(
                 Icons.edit,
               ),
 
               onPressed: () {
-
-                _openDialog(worker);
+                _openDialog(
+                  worker,
+                );
               },
             ),
           ],
@@ -491,56 +471,42 @@ class _AttendanceDayPageState
     );
   }
 
-  // ==============================
-  // MONTHLY SUMMARY
-  // ==============================
-
   void _openMonthlySummary(
     WorkerModel worker,
   ) async {
-
     try {
-
       final AttendanceMonthSummary
           summary =
           await _attendanceDao
               .getMonthlySummary(
-
         workerId:
             worker.id!,
-
         year:
             widget.year,
-
         month:
-            widget.monthIndex + 1,
+            widget.monthIndex +
+                1,
       );
 
       if (!mounted) return;
 
       showDialog(
-
         context: context,
 
         builder: (_) =>
             AlertDialog(
-
           title: Text(
-            '${worker.name} '
-            '— ${widget.monthName}',
+            '${worker.name} — ${widget.monthName}',
           ),
 
           content:
               SingleChildScrollView(
-
             child: Column(
-
               crossAxisAlignment:
                   CrossAxisAlignment
                       .start,
 
               children: [
-
                 const Text(
                   'Days Worked',
 
@@ -555,11 +521,11 @@ class _AttendanceDayPageState
                 ),
 
                 ...summary
-                    .daysByType.entries
+                    .daysByType
+                    .entries
                     .map(
                       (e) => Text(
-                        '${e.key}: '
-                        '${e.value} days',
+                        '${e.key}: ${e.value} days',
                       ),
                     ),
 
@@ -583,27 +549,29 @@ class _AttendanceDayPageState
                 const Divider(),
 
                 Text(
-
                   getBalanceText(
                     summary.balance,
                   ),
 
-                  style: TextStyle(
-
+                  style:
+                      TextStyle(
                     fontWeight:
-                        FontWeight.bold,
+                        FontWeight
+                            .bold,
 
                     fontSize: 16,
 
                     color:
-                        summary.balance > 0
-
-                            ? Colors.green
-
+                        summary.balance >
+                                0
+                            ? Colors
+                                .green
                             : summary.balance <
                                     0
-                                ? Colors.red
-                                : Colors.grey,
+                                ? Colors
+                                    .red
+                                : Colors
+                                    .grey,
                   ),
                 ),
               ],
@@ -611,9 +579,7 @@ class _AttendanceDayPageState
           ),
 
           actions: [
-
             TextButton(
-
               onPressed: () {
                 Navigator.pop(
                   context,
@@ -621,44 +587,34 @@ class _AttendanceDayPageState
               },
 
               child:
-                  const Text('Close'),
+                  const Text(
+                'Close',
+              ),
             ),
           ],
         ),
       );
-
     } catch (e) {
-
       debugPrint(
         'Summary error: $e',
       );
     }
   }
 
-  // ==============================
-  // OPEN DIALOG
-  // ==============================
-
   void _openDialog(
     WorkerModel worker,
   ) async {
-
     final date = DateTime(
-
       widget.year,
-
       widget.monthIndex + 1,
-
       selectedDay,
     );
 
     final saved =
         await _attendanceDao
             .getAttendanceForDay(
-
       workerId:
           worker.id!,
-
       date: date,
     );
 
@@ -675,13 +631,13 @@ class _AttendanceDayPageState
 
     SiteModel? site;
 
-    if (saved?.siteId != null &&
+    if (saved?.siteId !=
+            null &&
         sites.isNotEmpty) {
-
       site = sites.firstWhere(
-
         (s) =>
-            s.id == saved!.siteId,
+            s.id ==
+            saved!.siteId,
 
         orElse: () => sites.first,
       );
@@ -696,30 +652,24 @@ class _AttendanceDayPageState
     if (!mounted) return;
 
     showDialog(
-
       context: context,
 
       builder: (_) =>
           AlertDialog(
-
         title:
             Text(worker.name),
 
         content:
             SingleChildScrollView(
-
           child: Column(
-
             mainAxisSize:
                 MainAxisSize.min,
 
             children: [
-
-              // ATTENDANCE TYPE
               DropdownButtonFormField<
                   String>(
-
-                initialValue: type,
+                initialValue:
+                    type,
 
                 decoration:
                     const InputDecoration(
@@ -728,7 +678,6 @@ class _AttendanceDayPageState
                 ),
 
                 items: const [
-
                   '6-6',
                   '10-6',
                   '6-10',
@@ -736,7 +685,6 @@ class _AttendanceDayPageState
                   '10-2',
                   '2-6',
                   'Absent',
-
                 ]
                     .map(
                       (e) =>
@@ -753,11 +701,10 @@ class _AttendanceDayPageState
                 },
               ),
 
-              // SITE
               DropdownButtonFormField<
                   SiteModel>(
-
-                initialValue: site,
+                initialValue:
+                    site,
 
                 decoration:
                     const InputDecoration(
@@ -782,9 +729,7 @@ class _AttendanceDayPageState
                 },
               ),
 
-              // ADVANCE
               TextField(
-
                 controller:
                     advanceCtrl,
 
@@ -799,18 +744,18 @@ class _AttendanceDayPageState
                 ),
 
                 onChanged: (v) {
-
                   advance =
-                      double.tryParse(v) ??
+                      double.tryParse(
+                            v,
+                          ) ??
                           0;
                 },
               ),
 
-              // PAYMENT MODE
               DropdownButtonFormField<
                   String>(
-
-               initialValue: payment,
+                initialValue:
+                    payment,
 
                 decoration:
                     const InputDecoration(
@@ -819,10 +764,8 @@ class _AttendanceDayPageState
                 ),
 
                 items: const [
-
                   'Cash',
                   'Online',
-
                 ]
                     .map(
                       (e) =>
@@ -843,9 +786,7 @@ class _AttendanceDayPageState
         ),
 
         actions: [
-
           TextButton(
-
             onPressed: () {
               Navigator.pop(
                 context,
@@ -859,17 +800,15 @@ class _AttendanceDayPageState
           ),
 
           ElevatedButton(
-
             child:
-                const Text('Save'),
+                const Text(
+              'Save',
+            ),
 
             onPressed: () async {
-
               try {
-
                 final model =
                     AttendanceModel(
-
                   workerId:
                       worker.id!,
 
@@ -881,8 +820,7 @@ class _AttendanceDayPageState
                   attendanceType:
                       type,
 
-                  wage:
-                      _wage(
+                  wage: _wage(
                     worker,
                     type,
                   ),
@@ -902,7 +840,6 @@ class _AttendanceDayPageState
 
                 await _attendanceDao
                     .autoMarkAbsentIfMissed(
-
                   workerId:
                       worker.id!,
 
@@ -916,7 +853,6 @@ class _AttendanceDayPageState
                 );
 
                 if (mounted) {
-
                   Navigator.pop(
                     context,
                   );
@@ -924,7 +860,6 @@ class _AttendanceDayPageState
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(
-
                     const SnackBar(
                       content: Text(
                         'Attendance saved',
@@ -934,19 +869,15 @@ class _AttendanceDayPageState
 
                   setState(() {});
                 }
-
               } catch (e) {
-
                 debugPrint(
                   'Attendance save error: $e',
                 );
 
                 if (mounted) {
-
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(
-
                     SnackBar(
                       content: Text(
                         'Error: $e',

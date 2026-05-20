@@ -1,5 +1,6 @@
-class SiteModel {
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+class SiteModel {
   final String? id;
 
   final String siteName;
@@ -20,27 +21,23 @@ class SiteModel {
 
   final String? notes;
 
+  final Timestamp? createdAt;
+
+  final Timestamp? updatedAt;
+
   SiteModel({
-
     this.id,
-
     required this.siteName,
-
     this.location,
-
     this.ownerName,
-
     this.ownerPhone,
-
     this.startDate,
-
     required this.budget,
-
     required this.floorsCount,
-
     required this.status,
-
     this.notes,
+    this.createdAt,
+    this.updatedAt,
   });
 
   // ==============================
@@ -48,10 +45,11 @@ class SiteModel {
   // ==============================
 
   Map<String, dynamic> toMap() {
-
     return {
+      'site_name': siteName.trim(),
 
-      'site_name': siteName,
+      'site_name_search':
+          siteName.toLowerCase().trim(),
 
       'location': location,
 
@@ -68,6 +66,13 @@ class SiteModel {
       'status': status,
 
       'notes': notes,
+
+      'created_at':
+          createdAt ??
+              FieldValue.serverTimestamp(),
+
+      'updated_at':
+          FieldValue.serverTimestamp(),
     };
   }
 
@@ -79,9 +84,7 @@ class SiteModel {
     Map<String, dynamic> map,
     String documentId,
   ) {
-
     return SiteModel(
-
       id: documentId,
 
       siteName:
@@ -112,6 +115,12 @@ class SiteModel {
 
       notes:
           map['notes'],
+
+      createdAt:
+          map['created_at'],
+
+      updatedAt:
+          map['updated_at'],
     );
   }
 
@@ -120,31 +129,20 @@ class SiteModel {
   // ==============================
 
   SiteModel copyWith({
-
     String? id,
-
     String? siteName,
-
     String? location,
-
     String? ownerName,
-
     String? ownerPhone,
-
     String? startDate,
-
     double? budget,
-
     int? floorsCount,
-
     String? status,
-
     String? notes,
-
+    Timestamp? createdAt,
+    Timestamp? updatedAt,
   }) {
-
     return SiteModel(
-
       id: id ?? this.id,
 
       siteName:
@@ -166,13 +164,20 @@ class SiteModel {
           budget ?? this.budget,
 
       floorsCount:
-          floorsCount ?? this.floorsCount,
+          floorsCount ??
+              this.floorsCount,
 
       status:
           status ?? this.status,
 
       notes:
           notes ?? this.notes,
+
+      createdAt:
+          createdAt ?? this.createdAt,
+
+      updatedAt:
+          updatedAt ?? this.updatedAt,
     );
   }
 }

@@ -4,18 +4,19 @@ import 'attendance_month_page.dart';
 
 class AttendanceHomePage
     extends StatelessWidget {
-
   const AttendanceHomePage({
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final currentYear =
+        DateTime.now().year;
 
     final years =
         List.generate(
       5,
-      (i) => 2026 + i,
+      (i) => currentYear + i,
     );
 
     return Scaffold(
@@ -25,19 +26,24 @@ class AttendanceHomePage
       ),
 
       body: ListView.builder(
+        padding:
+            const EdgeInsets.all(
+          12,
+        ),
 
         itemCount:
             years.length,
 
         itemBuilder:
-            (context, index) {
-
+            (
+              context,
+              index,
+            ) {
           final year =
               years[index];
 
           return Card(
             child: ListTile(
-
               title:
                   Text('Year $year'),
 
@@ -47,7 +53,6 @@ class AttendanceHomePage
               ),
 
               onTap: () {
-
                 Navigator.push(
                   context,
 
