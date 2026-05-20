@@ -2,13 +2,14 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/services/storage_service.dart';
 
 import '../data/site_floor_file_dao.dart';
 import '../data/site_floor_file_model.dart';
 
-class FloorFilesPage
-    extends StatefulWidget {
-
+class FloorFilesPage extends StatefulWidget {
   final String siteId;
 
   final int floorNo;
@@ -16,13 +17,9 @@ class FloorFilesPage
   final String floorName;
 
   const FloorFilesPage({
-
     super.key,
-
     required this.siteId,
-
     required this.floorNo,
-
     required this.floorName,
   });
 
@@ -143,6 +140,42 @@ class _FloorFilesPageState
         return;
       }
 
+      final file =
+          File(
+        pickedFile.path!,
+      );
+
+      final firebaseFileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}';
+
+      final url =
+          await StorageService.instance.uploadFile(
+
+        file: file,
+
+        folder: 'floor_files',
+
+        fileName: firebaseFileName,
+      );
+
+      if (url == null) {
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+
+          const SnackBar(
+            content: Text(
+              'Upload failed',
+            ),
+          ),
+        );
+
+        return;
+      }
+
       final model =
           SiteFloorFileModel(
 
@@ -156,7 +189,7 @@ class _FloorFilesPageState
             pickedFile.name,
 
         filePath:
-            pickedFile.path!,
+            url,
 
         uploadedAt:
             DateTime.now()
@@ -211,17 +244,14 @@ class _FloorFilesPageState
 
     try {
 
+      await StorageService.instance
+          .deleteFile(
+        file.filePath,
+      );
+
       await _dao.delete(
         file.id!,
       );
-
-      final localFile =
-          File(file.filePath);
-
-      if (await localFile.exists()) {
-
-        await localFile.delete();
-      }
 
       setState(() {
         _reload();
@@ -239,13 +269,27 @@ class _FloorFilesPageState
         context,
       ).showSnackBar(
 
-        SnackBar(
+        const SnackBar(
           content: Text(
             'Error deleting file',
           ),
         ),
       );
     }
+  }
+
+  // ==============================
+  // OPEN FILE
+  // ==============================
+
+  Future<void> _openFile(
+    String url,
+  ) async {
+
+    final uri =
+        Uri.parse(url);
+
+    await launchUrl(uri);
   }
 
   // ==============================
@@ -259,7 +303,9 @@ class _FloorFilesPageState
 
       appBar: AppBar(
         title:
-            Text(widget.floorName),
+            Text(
+          widget.floorName,
+        ),
       ),
 
       floatingActionButton:
@@ -356,6 +402,12 @@ class _FloorFilesPageState
                     'Uploaded: '
                     '${file.uploadedAt.split('T').first}',
                   ),
+
+                  onTap: () {
+                    _openFile(
+                      file.filePath,
+                    );
+                  },
 
                   trailing:
                       IconButton(
