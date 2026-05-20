@@ -1,0 +1,149 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    // =========================
+    // AUTH CHECK
+    // =========================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // =========================
+    // ADMIN EMAILS
+    // =========================
+
+    function isAdmin() {
+
+      return request.auth.token.email in [
+
+        "yourmainadmin@gmail.com",
+
+        "secondadmin@gmail.com"
+
+      ];
+    }
+
+    // =========================
+    // WORKERS
+    // =========================
+
+    match /workers/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // ATTENDANCE
+    // =========================
+
+    match /attendance/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // SITES
+    // =========================
+
+    match /sites/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // PRIVATE WORKERS
+    // =========================
+
+    match /private_workers/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // PRIVATE WORK
+    // =========================
+
+    match /private_work/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // PRIVATE PAYMENTS
+    // =========================
+
+    match /private_worker_payments/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // SITE FILES
+    // =========================
+
+    match /site_agreements/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    match /site_floor_files/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    match /site_elevations/{document=**} {
+
+      allow read:
+          if isSignedIn();
+
+      allow write:
+          if isAdmin();
+    }
+
+    // =========================
+    // DEFAULT DENY
+    // =========================
+
+    match /{document=**} {
+
+      allow read, write:
+          if false;
+    }
+  }
+}
