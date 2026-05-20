@@ -5,15 +5,38 @@ import '../../../core/services/firebase_service.dart';
 import 'private_work_model.dart';
 
 class PrivateWorkDao {
-  // =========================
-  // COLLECTION
-  // =========================
-
   final CollectionReference<
           Map<String, dynamic>>
       _collection =
       FirebaseService.instance
           .privateWork;
+
+  // =========================
+  // REALTIME STREAM
+  // =========================
+
+  Stream<List<PrivateWork>>
+      watchAll() {
+    return _collection
+        .orderBy(
+          'created_at',
+          descending: true,
+        )
+        .snapshots()
+        .map(
+      (snapshot) {
+        return snapshot.docs
+            .map(
+              (doc) =>
+                  PrivateWork.fromMap(
+                doc.data(),
+                doc.id,
+              ),
+            )
+            .toList();
+      },
+    );
+  }
 
   // =========================
   // GET ALL

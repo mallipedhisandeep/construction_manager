@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/private_work_dao.dart';
 import '../data/private_work_model.dart';
 
@@ -456,7 +456,7 @@ class _AddEditPrivateWorkPageState
         createdAt:
             widget.work
                     ?.createdAt ??
-                DateTime.now(),
+                Timestamp.now(),
       );
 
       if (widget.work == null) {

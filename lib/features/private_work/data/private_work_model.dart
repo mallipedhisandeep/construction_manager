@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PrivateWork {
   final String? id;
 
@@ -21,7 +23,7 @@ class PrivateWork {
 
   final String? notes;
 
-  final DateTime createdAt;
+  final Timestamp createdAt;
 
   PrivateWork({
     this.id,
@@ -38,42 +40,21 @@ class PrivateWork {
     required this.createdAt,
   });
 
-  // =========================
-  // TO MAP
-  // =========================
-
   Map<String, dynamic> toMap() {
     return {
       'worker_id': workerId,
-
       'worker_name': workerName,
-
       'work_type': workType,
-
       'site_id': siteId,
-
       'site_name': siteName,
-
       'work_date': workDate,
-
-      'price_charged':
-          priceCharged,
-
-      'amount_paid':
-          amountPaid,
-
+      'price_charged': priceCharged,
+      'amount_paid': amountPaid,
       'status': status,
-
       'notes': notes,
-
-      'created_at':
-          createdAt.toIso8601String(),
+      'created_at': createdAt,
     };
   }
-
-  // =========================
-  // FROM MAP
-  // =========================
 
   factory PrivateWork.fromMap(
     Map<String, dynamic> map,
@@ -81,48 +62,24 @@ class PrivateWork {
   ) {
     return PrivateWork(
       id: docId,
-
-      workerId:
-          map['worker_id'] ?? '',
-
-      workerName:
-          map['worker_name'] ?? '',
-
-      workType:
-          map['work_type'] ?? '',
-
-      siteId:
-          map['site_id'] ?? '',
-
-      siteName:
-          map['site_name'] ?? '',
-
-      workDate:
-          map['work_date'] ?? '',
-
+      workerId: map['worker_id'] ?? '',
+      workerName: map['worker_name'] ?? '',
+      workType: map['work_type'] ?? '',
+      siteId: map['site_id'] ?? '',
+      siteName: map['site_name'] ?? '',
+      workDate: map['work_date'] ?? '',
       priceCharged:
-          (map['price_charged'] ??
-                  0)
+          (map['price_charged'] ?? 0)
               .toDouble(),
-
       amountPaid:
-          (map['amount_paid'] ??
-                  0)
+          (map['amount_paid'] ?? 0)
               .toDouble(),
-
-      status:
-          map['status'] ??
-              'Active',
-
-      notes:
-          map['notes'],
-
+      status: map['status'] ?? '',
+      notes: map['notes'],
       createdAt:
-          DateTime.tryParse(
-                map['created_at'] ??
-                    '',
-              ) ??
-              DateTime.now(),
+          map['created_at'] is Timestamp
+              ? map['created_at']
+              : Timestamp.now(),
     );
   }
 }
