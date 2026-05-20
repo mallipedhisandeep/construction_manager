@@ -1,26 +1,22 @@
 import 'dart:io';
 
-import '../../../core/services/storage_service.dart';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/services/storage_service.dart';
+
 import '../data/site_agreement_dao.dart';
 import '../data/site_agreement_model.dart';
-
 import '../data/site_dao.dart';
 import '../data/site_elevation_dao.dart';
 import '../data/site_elevation_model.dart';
-
 import '../data/site_model.dart';
 
 import 'floor_files_page.dart';
 import 'site_form_page.dart';
 
-class SiteDetailsPage
-    extends StatefulWidget {
-
+class SiteDetailsPage extends StatefulWidget {
   final SiteModel site;
 
   const SiteDetailsPage({
@@ -36,15 +32,12 @@ class SiteDetailsPage
 class _SiteDetailsPageState
     extends State<SiteDetailsPage> {
 
-  final SiteDao _dao =
-      SiteDao();
+  final SiteDao _dao = SiteDao();
 
-  final SiteAgreementDao
-      _agreementDao =
+  final SiteAgreementDao _agreementDao =
       SiteAgreementDao();
 
-  final SiteElevationDao
-      _elevationDao =
+  final SiteElevationDao _elevationDao =
       SiteElevationDao();
 
   late Future<List<SiteElevationModel>>
@@ -52,15 +45,9 @@ class _SiteDetailsPageState
 
   bool isDeleting = false;
 
-  // ==============================
-  // INIT
-  // ==============================
-
   @override
   void initState() {
-
     super.initState();
-
     _loadElevations();
   }
 
@@ -72,12 +59,7 @@ class _SiteDetailsPageState
     );
   }
 
-  // ==============================
-  // FILE PICKER
-  // ==============================
-
-  Future<PlatformFile?>
-      pickFile() async {
+  Future<PlatformFile?> pickFile() async {
 
     final result =
         await FilePicker.platform
@@ -90,10 +72,6 @@ class _SiteDetailsPageState
     return result.files.single;
   }
 
-  // ==============================
-  // UI
-  // ==============================
-
   @override
   Widget build(BuildContext context) {
 
@@ -102,8 +80,7 @@ class _SiteDetailsPageState
     return Scaffold(
 
       appBar: AppBar(
-        title:
-            Text(site.siteName),
+        title: Text(site.siteName),
       ),
 
       body: SingleChildScrollView(
@@ -117,10 +94,6 @@ class _SiteDetailsPageState
               CrossAxisAlignment.start,
 
           children: [
-
-            // ======================
-            // SITE INFO
-            // ======================
 
             _row(
               'Location',
@@ -146,8 +119,7 @@ class _SiteDetailsPageState
 
             _row(
               'Floors',
-              site.floorsCount
-                  .toString(),
+              site.floorsCount.toString(),
             ),
 
             _row(
@@ -160,9 +132,7 @@ class _SiteDetailsPageState
               site.notes,
             ),
 
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
 
             // ======================
             // AGREEMENTS
@@ -179,132 +149,148 @@ class _SiteDetailsPageState
               ),
             ),
 
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
-FutureBuilder<List<SiteAgreementModel>>(
+            FutureBuilder<
+                List<SiteAgreementModel>>(
 
-  future: _agreementDao.getBySite(
-    site.id!,
-  ),
-
-  builder: (_, snapshot) {
-
-    if (snapshot.connectionState ==
-        ConnectionState.waiting) {
-
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (!snapshot.hasData ||
-        snapshot.data!.isEmpty) {
-
-      return const Text(
-        'No agreements added',
-      );
-    }
-
-    final list = snapshot.data!;
-
-    return Column(
-
-      children: list.map(
-        (agreement) {
-
-          return Card(
-
-            child: ListTile(
-
-              leading: const Icon(
-                Icons.description,
+              future:
+                  _agreementDao
+                      .getBySite(
+                site.id!,
               ),
 
-              title: Text(
-                agreement.fileName,
-              ),
+              builder:
+                  (_, snapshot) {
 
-              subtitle: Text(
-                agreement.createdAt,
-              ),
+                if (snapshot
+                        .connectionState ==
+                    ConnectionState.waiting) {
 
-              onTap: () async {
+                  return const Center(
+                    child:
+                        CircularProgressIndicator(),
+                  );
+                }
 
-                await launchUrl(
+                if (!snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
 
-                  Uri.parse(
-                    agreement.filePath,
-                  ),
+                  return const Text(
+                    'No agreements added',
+                  );
+                }
 
-                  mode: LaunchMode
-                      .externalApplication,
+                final list =
+                    snapshot.data!;
+
+                return Column(
+
+                  children:
+                      list.map(
+                    (agreement) {
+
+                      return Card(
+
+                        child:
+                            ListTile(
+
+                          leading:
+                              const Icon(
+                            Icons.description,
+                          ),
+
+                          title: Text(
+                            agreement.fileName,
+                          ),
+
+                          subtitle: Text(
+                            agreement.createdAt,
+                          ),
+
+                          onTap: () async {
+
+                            await launchUrl(
+
+                              Uri.parse(
+                                agreement.filePath,
+                              ),
+
+                              mode:
+                                  LaunchMode.externalApplication,
+                            );
+                          },
+
+                          trailing:
+                              Row(
+
+                            mainAxisSize:
+                                MainAxisSize.min,
+
+                            children: [
+
+                              IconButton(
+
+                                icon:
+                                    const Icon(
+                                  Icons.open_in_new,
+                                ),
+
+                                onPressed:
+                                    () async {
+
+                                  await launchUrl(
+
+                                    Uri.parse(
+                                      agreement.filePath,
+                                    ),
+
+                                    mode:
+                                        LaunchMode.externalApplication,
+                                  );
+                                },
+                              ),
+
+                              IconButton(
+
+                                icon:
+                                    const Icon(
+                                  Icons.delete,
+                                  color:
+                                      Colors.red,
+                                ),
+
+                                onPressed:
+                                    () async {
+
+                                  await StorageService.instance
+                                      .deleteFile(
+                                    agreement.filePath,
+                                  );
+
+                                  await _agreementDao
+                                      .deleteAgreement(
+                                    agreement.id!,
+                                  );
+
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ).toList(),
                 );
               },
-
-              trailing: Row(
-
-                mainAxisSize:
-                    MainAxisSize.min,
-
-                children: [
-
-                  IconButton(
-
-                    icon: const Icon(
-                      Icons.open_in_new,
-                    ),
-
-                    onPressed: () async {
-
-                      await launchUrl(
-
-                        Uri.parse(
-                          agreement.filePath,
-                        ),
-
-                        mode: LaunchMode
-                            .externalApplication,
-                      );
-                    },
-                  ),
-
-                  IconButton(
-
-                    icon: const Icon(
-                      Icons.delete,
-                      color: Colors.red,
-                    ),
-
-                    onPressed: () async {
-
-                      await StorageService.instance
-                          .deleteFile(
-                        agreement.filePath,
-                      );
-
-                      await _agreementDao
-                          .deleteAgreement(
-                        agreement.id!,
-                      );
-
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
             ),
-          );
-        },
-      ).toList(),
-    );
-  },
-),
 
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
             ElevatedButton.icon(
 
@@ -320,9 +306,7 @@ FutureBuilder<List<SiteAgreementModel>>(
                   _addAgreement,
             ),
 
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
 
             // ======================
             // FLOORS
@@ -339,9 +323,7 @@ FutureBuilder<List<SiteAgreementModel>>(
               ),
             ),
 
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
             ListView.builder(
 
@@ -358,9 +340,7 @@ FutureBuilder<List<SiteAgreementModel>>(
 
                 final floorName =
                     i == 0
-
                         ? 'Ground Floor'
-
                         : '$i Floor';
 
                 return Card(
@@ -368,7 +348,9 @@ FutureBuilder<List<SiteAgreementModel>>(
                   child: ListTile(
 
                     title:
-                        Text(floorName),
+                        Text(
+                      floorName,
+                    ),
 
                     trailing:
                         const Icon(
@@ -382,6 +364,7 @@ FutureBuilder<List<SiteAgreementModel>>(
                         context,
 
                         MaterialPageRoute(
+
                           builder: (_) =>
                               FloorFilesPage(
 
@@ -402,235 +385,246 @@ FutureBuilder<List<SiteAgreementModel>>(
               },
             ),
 
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
 
-// ======================
-// ELEVATIONS
-// ======================
+            // ======================
+            // ELEVATIONS
+            // ======================
 
-const Text(
+            const Text(
 
-  'Elevations',
+              'Elevations',
 
-  style: TextStyle(
-    fontSize: 18,
-    fontWeight:
-        FontWeight.bold,
-  ),
-),
-
-const SizedBox(
-  height: 10,
-),
-
-FutureBuilder<
-    List<
-        SiteElevationModel>>(
-
-  future:
-      _elevationFuture,
-
-  builder:
-      (_, snapshot) {
-
-    if (snapshot
-            .connectionState ==
-        ConnectionState
-            .waiting) {
-
-      return const Center(
-        child:
-            CircularProgressIndicator(),
-      );
-    }
-
-    if (!snapshot
-            .hasData ||
-        snapshot.data!
-            .isEmpty) {
-
-      return const Text(
-        'No elevations added',
-      );
-    }
-
-    final list =
-        snapshot.data!;
-
-    return Column(
-
-      children:
-          list.map(
-        (elevation) {
-
-          return Card(
-
-            child:
-                ListTile(
-
-              leading:
-                  const Icon(
-                Icons.image,
-              ),
-
-              title: Text(
-
-                elevation
-                    .filePath
-                    .split('/')
-                    .last,
-              ),
-
-              subtitle: Text(
-                elevation
-                    .createdAt,
-              ),
-
-              trailing:
-                  Row(
-
-                mainAxisSize:
-                    MainAxisSize.min,
-
-                children: [
-
-                  IconButton(
-
-                    icon:
-                        const Icon(
-                      Icons
-                          .open_in_new,
-                    ),
-
-                    onPressed:
-                        () async {
-
-                      final uri =
-                          Uri.parse(
-                        elevation
-                            .filePath,
-                      );
-
-                      await launchUrl(
-                        uri,
-                      );
-                    },
-                  ),
-
-                  IconButton(
-
-                    icon:
-                        const Icon(
-                      Icons
-                          .delete,
-                      color:
-                          Colors.red,
-                    ),
-
-                    onPressed:
-                        () async {
-
-                      await StorageService
-                          .instance
-                          .deleteFile(
-                        elevation
-                            .filePath,
-                      );
-
-                      await _elevationDao
-                          .delete(
-                        elevation
-                            .id!,
-                      );
-
-                      setState(
-                        _loadElevations,
-                      );
-                    },
-                  ),
-                ],
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
-          );
-        },
-      ).toList(),
-    );
-  },
-),
 
-const SizedBox(
-  height: 10,
-),
+            const SizedBox(height: 10),
 
-ElevatedButton.icon(
+            FutureBuilder<
+                List<SiteElevationModel>>(
 
-  icon: const Icon(
-    Icons.add,
-  ),
+              future:
+                  _elevationFuture,
 
-  label: const Text(
-    'Add Elevation',
-  ),
+              builder:
+                  (_, snapshot) {
 
-  onPressed: () async {
+                if (snapshot
+                        .connectionState ==
+                    ConnectionState.waiting) {
 
-    final picked =
-        await pickFile();
+                  return const Center(
+                    child:
+                        CircularProgressIndicator(),
+                  );
+                }
 
-    if (picked == null) {
-      return;
-    }
+                if (!snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
 
-    if (picked.path == null) {
-      return;
-    }
+                  return const Text(
+                    'No elevations added',
+                  );
+                }
 
-    final file =
-        File(picked.path!);
+                final list =
+                    snapshot.data!;
 
-    final fileName =
-        '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+                return Column(
 
-    final url =
-        await StorageService.instance.uploadFile(
+                  children:
+                      list.map(
+                    (elevation) {
 
-      file: file,
+                      return Card(
 
-      folder: 'elevations',
+                        child:
+                            ListTile(
 
-      fileName: fileName,
-    );
+                          leading:
+                              const Icon(
+                            Icons.image,
+                          ),
 
-    if (url == null) {
-      return;
-    }
+                          title: Text(
+                            elevation.fileName,
+                          ),
 
-    await _elevationDao.insert(
+                          subtitle: Text(
+                            elevation.createdAt,
+                          ),
 
-      SiteElevationModel(
+                          onTap: () async {
 
-        siteId:
-            widget.site.id!,
+                            await launchUrl(
 
-        filePath: url,
+                              Uri.parse(
+                                elevation.filePath,
+                              ),
 
-        createdAt:
-            DateTime.now()
-                .toIso8601String(),
-      ),
-    );
+                              mode:
+                                  LaunchMode.externalApplication,
+                            );
+                          },
 
-    setState(
-      _loadElevations,
-    );
-  },
-),
+                          trailing:
+                              Row(
 
-const SizedBox(
-  height: 30,
-),
+                            mainAxisSize:
+                                MainAxisSize.min,
+
+                            children: [
+
+                              IconButton(
+
+                                icon:
+                                    const Icon(
+                                  Icons.open_in_new,
+                                ),
+
+                                onPressed:
+                                    () async {
+
+                                  await launchUrl(
+
+                                    Uri.parse(
+                                      elevation.filePath,
+                                    ),
+
+                                    mode:
+                                        LaunchMode.externalApplication,
+                                  );
+                                },
+                              ),
+
+                              IconButton(
+
+                                icon:
+                                    const Icon(
+                                  Icons.delete,
+                                  color:
+                                      Colors.red,
+                                ),
+
+                                onPressed:
+                                    () async {
+
+                                  await StorageService.instance
+                                      .deleteFile(
+                                    elevation.filePath,
+                                  );
+
+                                  await _elevationDao
+                                      .delete(
+                                    elevation.id!,
+                                  );
+
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  setState(
+                                    _loadElevations,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+
+            ElevatedButton.icon(
+
+              icon: const Icon(
+                Icons.add,
+              ),
+
+              label: const Text(
+                'Add Elevation',
+              ),
+
+              onPressed:
+                  () async {
+
+                final picked =
+                    await pickFile();
+
+                if (picked == null) {
+                  return;
+                }
+
+                if (picked.path == null) {
+                  return;
+                }
+
+                final file =
+                    File(
+                  picked.path!,
+                );
+
+                final firebaseFileName =
+                    '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+
+                final url =
+                    await StorageService.instance
+                        .uploadFile(
+
+                  file: file,
+
+                  folder:
+                      'elevations',
+
+                  fileName:
+                      firebaseFileName,
+                );
+
+                if (url == null) {
+                  return;
+                }
+
+                await _elevationDao
+                    .insert(
+
+                  SiteElevationModel(
+
+                    siteId:
+                        widget.site.id!,
+
+                    fileName:
+                        picked.name,
+
+                    filePath:
+                        url,
+
+                    createdAt:
+                        DateTime.now()
+                            .toIso8601String(),
+                  ),
+                );
+
+                if (!mounted) {
+                  return;
+                }
+
+                setState(
+                  _loadElevations,
+                );
+              },
+            ),
+
+            const SizedBox(height: 30),
+
             // ======================
             // EDIT SITE
             // ======================
@@ -645,16 +639,17 @@ const SizedBox(
                 'Edit Site',
               ),
 
-              onPressed: () async {
+              onPressed:
+                  () async {
 
-              if (!mounted) return;
-              
+                final navigator =
+                    Navigator.of(context);
+
                 final changed =
-                    await Navigator.push(
-
-                  context,
+                    await navigator.push(
 
                   MaterialPageRoute(
+
                     builder: (_) =>
                         SiteFormPage(
                       site: site,
@@ -662,20 +657,20 @@ const SizedBox(
                   ),
                 );
 
-                if (changed == true &&
-                    mounted) {
+                if (!mounted) {
+                  return;
+                }
 
-                  Navigator.pop(
-                    context,
+                if (changed == true) {
+
+                  navigator.pop(
                     true,
                   );
                 }
               },
             ),
 
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
             // ======================
             // DELETE SITE
@@ -714,10 +709,6 @@ const SizedBox(
     );
   }
 
-  // ==============================
-  // DELETE SITE
-  // ==============================
-
   Future<void> _deleteSite() async {
 
     final confirm =
@@ -735,8 +726,7 @@ const SizedBox(
 
         content:
             const Text(
-          'Are you sure you want '
-          'to delete this site?',
+          'Are you sure you want to delete this site?',
         ),
 
         actions: [
@@ -790,7 +780,9 @@ const SizedBox(
         widget.site.id!,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       Navigator.pop(
         context,
@@ -803,7 +795,9 @@ const SizedBox(
         'DELETE SITE ERROR => $e',
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(
         context,
@@ -827,71 +821,82 @@ const SizedBox(
     }
   }
 
-  // ==============================
-  // ADD AGREEMENT
-  // ==============================
+  Future<void> _addAgreement() async {
 
-Future<void> _addAgreement() async {
+    final result =
+        await FilePicker.platform
+            .pickFiles(
 
-  final result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: [
-      'pdf',
-      'jpg',
-      'jpeg',
-      'png',
-    ],
-  );
+      type: FileType.custom,
 
-  if (result == null) {
-    return;
+      allowedExtensions: [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+      ],
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    final picked =
+        result.files.first;
+
+    if (picked.path == null) {
+      return;
+    }
+
+    final file =
+        File(picked.path!);
+
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+
+    final url =
+        await StorageService.instance
+            .uploadFile(
+
+      file: file,
+
+      folder: 'agreements',
+
+      fileName: fileName,
+    );
+
+    if (url == null) {
+      return;
+    }
+
+    final agreement =
+        SiteAgreementModel(
+
+      siteId:
+          widget.site.id!,
+
+      filePath:
+          url,
+
+      fileName:
+          picked.name,
+
+      createdAt:
+          DateTime.now()
+              .toIso8601String(),
+    );
+
+    await _agreementDao
+        .insertAgreement(
+      agreement,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
   }
-
-  final picked =
-      result.files.first;
-
-  if (picked.path == null) {
-    return;
-  }
-
-  final file =
-      File(picked.path!);
-
-  final fileName =
-      '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
-
-  final url =
-      await StorageService.instance.uploadFile(
-    file: file,
-    folder: 'agreements',
-    fileName: fileName,
-  );
-
-  if (url == null) {
-    return;
-  }
-
-  final agreement =
-      SiteAgreementModel(
-    siteId: widget.site.id!,
-    filePath: url,
-    fileName: picked.name,
-    createdAt:
-        DateTime.now()
-            .toIso8601String(),
-  );
-
-  await _agreementDao
-      .insertAgreement(
-    agreement,
-  );
-
-  setState(() {});
-}
-
-  // ==============================
-  // ROW
-  // ==============================
 
   Widget _row(
     String label,
@@ -907,8 +912,7 @@ Future<void> _addAgreement() async {
 
       child: Text(
 
-        '$label : '
-        '${value ?? '-'}',
+        '$label : ${value ?? '-'}',
 
         style:
             const TextStyle(
@@ -917,10 +921,6 @@ Future<void> _addAgreement() async {
       ),
     );
   }
-
-  // ==============================
-  // OWNER PHONE
-  // ==============================
 
   Widget _ownerPhoneRow() {
 
@@ -968,7 +968,8 @@ Future<void> _addAgreement() async {
               color: Colors.green,
             ),
 
-            onPressed: () async {
+            onPressed:
+                () async {
 
               final uri =
                   Uri.parse(

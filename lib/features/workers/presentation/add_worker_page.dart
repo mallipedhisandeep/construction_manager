@@ -19,9 +19,11 @@ class AddWorkerPage extends StatefulWidget {
 class _AddWorkerPageState
     extends State<AddWorkerPage> {
 
-  final _formKey = GlobalKey<FormState>();
+  final _formKey =
+      GlobalKey<FormState>();
 
-  final WorkerDao _dao = WorkerDao();
+  final WorkerDao _dao =
+      WorkerDao();
 
   // ==============================
   // CONTROLLERS
@@ -67,7 +69,8 @@ class _AddWorkerPageState
   // DROPDOWN VALUES
   // ==============================
 
-  String selectedGender = 'Male';
+  String selectedGender =
+      'Male';
 
   String selectedState =
       'Telangana';
@@ -80,61 +83,93 @@ class _AddWorkerPageState
 
   bool isSaving = false;
 
+  // ==============================
+  // INIT
+  // ==============================
+
   @override
   void initState() {
-    super.initState();
 
-    // ==========================
-    // EDIT MODE
-    // ==========================
+    super.initState();
 
     if (widget.worker != null) {
 
+      final worker =
+          widget.worker!;
+
       nameController.text =
-          widget.worker!.name;
+          worker.name;
 
       phoneController.text =
-          widget.worker!.phone;
+          worker.phone;
 
       selectedGender =
-          widget.worker!.gender;
+          worker.gender;
 
       selectedState =
-          widget.worker!.state;
+          worker.state;
 
       selectedRole =
-          widget.worker!.role;
+          worker.role;
 
       selectedWorkType =
-          widget.worker!.workType;
+          worker.workType;
 
       rate6to6Controller.text =
-          widget.worker!.rate6to6
+          worker.rate6to6
               .toString();
 
       rate10to6Controller.text =
-          widget.worker!.rate10to6
+          worker.rate10to6
               .toString();
 
       rate6to10Controller.text =
-          widget.worker!.rate6to10
+          worker.rate6to10
               .toString();
 
       rate6to2Controller.text =
-          widget.worker!.rate6to2
+          worker.rate6to2
               .toString();
 
       rate10to2Controller.text =
-          widget.worker!.rate10to2
+          worker.rate10to2
               .toString();
 
       rate2to6Controller.text =
-          widget.worker!.rate2to6
+          worker.rate2to6
               .toString();
 
       notesController.text =
-          widget.worker!.notes ?? '';
+          worker.notes ?? '';
     }
+  }
+
+  // ==============================
+  // DISPOSE
+  // ==============================
+
+  @override
+  void dispose() {
+
+    nameController.dispose();
+
+    phoneController.dispose();
+
+    rate6to6Controller.dispose();
+
+    rate10to6Controller.dispose();
+
+    rate6to10Controller.dispose();
+
+    rate6to2Controller.dispose();
+
+    rate10to2Controller.dispose();
+
+    rate2to6Controller.dispose();
+
+    notesController.dispose();
+
+    super.dispose();
   }
 
   // ==============================
@@ -145,6 +180,7 @@ class _AddWorkerPageState
 
     if (!_formKey.currentState!
         .validate()) {
+
       return;
     }
 
@@ -154,20 +190,28 @@ class _AddWorkerPageState
 
     try {
 
-      final worker = WorkerModel(
-        id: widget.worker?.id,
+      final worker =
+          WorkerModel(
+
+        id:
+            widget.worker?.id,
 
         name:
-            nameController.text.trim(),
+            nameController.text
+                .trim(),
 
         phone:
-            phoneController.text.trim(),
+            phoneController.text
+                .trim(),
 
-        gender: selectedGender,
+        gender:
+            selectedGender,
 
-        state: selectedState,
+        state:
+            selectedState,
 
-        role: selectedRole,
+        role:
+            selectedRole,
 
         workType:
             selectedWorkType,
@@ -220,7 +264,7 @@ class _AddWorkerPageState
       );
 
       // ==========================
-      // INSERT OR UPDATE
+      // INSERT / UPDATE
       // ==========================
 
       if (widget.worker == null) {
@@ -236,38 +280,46 @@ class _AddWorkerPageState
         );
       }
 
-      if (mounted) {
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.worker == null
-                  ? 'Worker added successfully'
-                  : 'Worker updated successfully',
-            ),
-          ),
-        );
-
-      if (!mounted){
-       return;
+      if (!mounted) {
+        return;
       }
-        Navigator.pop(
-          context,
-          true,
-        );
-      }
-
-    } catch (e) {
-
-      debugPrint(
-        'Save worker error: $e',
-      );
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(
+
+        SnackBar(
+
+          content: Text(
+
+            widget.worker == null
+
+                ? 'Worker added successfully'
+
+                : 'Worker updated successfully',
+          ),
+        ),
+      );
+
+      Navigator.pop(
+        context,
+        true,
+      );
+
+    } catch (e) {
+
+      debugPrint(
+        'SAVE WORKER ERROR => $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+
         SnackBar(
           content: Text(
             'Error: $e',
@@ -278,6 +330,7 @@ class _AddWorkerPageState
     } finally {
 
       if (mounted) {
+
         setState(() {
           isSaving = false;
         });
@@ -285,26 +338,38 @@ class _AddWorkerPageState
     }
   }
 
+  // ==============================
+  // UI
+  // ==============================
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
+
       appBar: AppBar(
+
         title: Text(
+
           widget.worker == null
+
               ? 'Add Worker'
+
               : 'Edit Worker',
         ),
       ),
 
       body: Padding(
+
         padding:
             const EdgeInsets.all(16),
 
         child: Form(
+
           key: _formKey,
 
           child: ListView(
+
             children: [
 
               // ==================
@@ -312,6 +377,7 @@ class _AddWorkerPageState
               // ==================
 
               TextFormField(
+
                 controller:
                     nameController,
 
@@ -324,6 +390,7 @@ class _AddWorkerPageState
 
                   if (v == null ||
                       v.trim().isEmpty) {
+
                     return 'Required';
                   }
 
@@ -336,6 +403,7 @@ class _AddWorkerPageState
               // ==================
 
               TextFormField(
+
                 controller:
                     phoneController,
 
@@ -351,7 +419,8 @@ class _AddWorkerPageState
                 validator: (v) {
 
                   if (v == null ||
-                      v.length < 10) {
+                      v.trim().length < 10) {
+
                     return 'Invalid number';
                   }
 
@@ -364,59 +433,76 @@ class _AddWorkerPageState
               // ==================
 
               dropdown(
+
                 'Gender',
+
                 selectedGender,
+
                 [
                   'Male',
                   'Female',
                 ],
+
                 (v) {
+
                   setState(() {
-                    selectedGender =
-                        v;
+                    selectedGender = v;
                   });
                 },
               ),
 
               dropdown(
+
                 'Work Type',
+
                 selectedWorkType,
+
                 [
                   'Centring',
                   'Brickwork',
                 ],
+
                 (v) {
+
                   setState(() {
-                    selectedWorkType =
-                        v;
+                    selectedWorkType = v;
                   });
                 },
               ),
 
               dropdown(
+
                 'State',
+
                 selectedState,
+
                 [
                   'Telangana',
                   'Andhra',
                   'Bihar',
                 ],
+
                 (v) {
+
                   setState(() {
-                    selectedState =
-                        v;
+                    selectedState = v;
                   });
                 },
               ),
 
               dropdown(
+
                 'Role',
+
                 selectedRole,
+
                 [
                   'Mason',
                   'Helper',
                 ],
+
                 (v) {
+
                   setState(() {
                     selectedRole = v;
                   });
@@ -428,7 +514,9 @@ class _AddWorkerPageState
               ),
 
               const Text(
+
                 'Wages',
+
                 style: TextStyle(
                   fontWeight:
                       FontWeight.bold,
@@ -470,6 +558,7 @@ class _AddWorkerPageState
               // ==================
 
               TextFormField(
+
                 controller:
                     notesController,
 
@@ -489,19 +578,37 @@ class _AddWorkerPageState
               // ==================
 
               ElevatedButton(
+
                 onPressed:
+
                     isSaving
                         ? null
                         : saveWorker,
 
-                child: isSaving
-                    ? const CircularProgressIndicator()
-                    : Text(
-                        widget.worker ==
-                                null
-                            ? 'Save Worker'
-                            : 'Update Worker',
-                      ),
+                child:
+
+                    isSaving
+
+                        ? const SizedBox(
+
+                            height: 22,
+                            width: 22,
+
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+
+                        : Text(
+
+                            widget.worker ==
+                                    null
+
+                                ? 'Save Worker'
+
+                                : 'Update Worker',
+                          ),
               ),
             ],
           ),
@@ -511,19 +618,24 @@ class _AddWorkerPageState
   }
 
   // ==============================
-  // DROPDOWN WIDGET
+  // DROPDOWN
   // ==============================
 
   Widget dropdown(
+
     String label,
+
     String value,
+
     List<String> items,
+
     ValueChanged<String>
         onChanged,
   ) {
 
     return DropdownButtonFormField<
         String>(
+
       initialValue: value,
 
       decoration:
@@ -531,17 +643,22 @@ class _AddWorkerPageState
         labelText: label,
       ),
 
-      items: items
-          .map(
-            (e) =>
-                DropdownMenuItem(
-              value: e,
-              child: Text(e),
-            ),
-          )
-          .toList(),
+      items:
+          items.map(
+
+        (e) {
+
+          return DropdownMenuItem(
+
+            value: e,
+
+            child: Text(e),
+          );
+        },
+      ).toList(),
 
       onChanged: (v) {
+
         if (v != null) {
           onChanged(v);
         }
@@ -554,12 +671,15 @@ class _AddWorkerPageState
   // ==============================
 
   Widget wageField(
+
     TextEditingController
         controller,
+
     String label,
   ) {
 
     return TextFormField(
+
       controller: controller,
 
       keyboardType:
@@ -567,7 +687,9 @@ class _AddWorkerPageState
 
       decoration:
           InputDecoration(
+
         labelText: label,
+
         prefixText: '₹ ',
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 class StorageService {
   StorageService._();
@@ -21,19 +22,37 @@ class StorageService {
     required String fileName,
   }) async {
     try {
+
+      final cleanFileName =
+          fileName.replaceAll(' ', '_');
+
       final ref = _storage
           .ref()
           .child(folder)
-          .child(fileName);
+          .child(cleanFileName);
 
-      await ref.putFile(file);
+      final metadata = SettableMetadata(
+        contentType: _getContentType(
+          cleanFileName,
+        ),
+      );
+
+      await ref.putFile(
+        file,
+        metadata,
+      );
 
       final url =
           await ref.getDownloadURL();
 
       return url;
+
     } catch (e) {
-      debugPrint('UPLOAD ERROR => $e');
+
+      debugPrint(
+        'UPLOAD ERROR => $e',
+      );
+
       return null;
     }
   }
@@ -46,11 +65,46 @@ class StorageService {
     String url,
   ) async {
     try {
+
+      if (url.isEmpty) {
+        return;
+      }
+
       await _storage
           .refFromURL(url)
           .delete();
+
     } catch (e) {
-      debugPrint('DELETE FILE ERROR => $e');
+
+      debugPrint(
+        'DELETE FILE ERROR => $e',
+      );
     }
+  }
+
+  // ==============================
+  // CONTENT TYPE
+  // ==============================
+
+  String _getContentType(
+    String fileName,
+  ) {
+    final lower =
+        fileName.toLowerCase();
+
+    if (lower.endsWith('.pdf')) {
+      return 'application/pdf';
+    }
+
+    if (lower.endsWith('.png')) {
+      return 'image/png';
+    }
+
+    if (lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+
+    return 'application/octet-stream';
   }
 }

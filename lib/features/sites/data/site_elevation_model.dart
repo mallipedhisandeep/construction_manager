@@ -4,6 +4,8 @@ class SiteElevationModel {
 
   final String siteId;
 
+  final String fileName;
+
   final String filePath;
 
   final String createdAt;
@@ -13,6 +15,8 @@ class SiteElevationModel {
     this.id,
 
     required this.siteId,
+
+    required this.fileName,
 
     required this.filePath,
 
@@ -28,6 +32,8 @@ class SiteElevationModel {
     return {
 
       'site_id': siteId,
+
+      'file_name': fileName,
 
       'file_path': filePath,
 
@@ -51,6 +57,9 @@ class SiteElevationModel {
       siteId:
           map['site_id'] ?? '',
 
+      fileName:
+          map['file_name'] ?? '',
+
       filePath:
           map['file_path'] ?? '',
 
@@ -69,6 +78,8 @@ class SiteElevationModel {
 
     String? siteId,
 
+    String? fileName,
+
     String? filePath,
 
     String? createdAt,
@@ -81,6 +92,9 @@ class SiteElevationModel {
 
       siteId:
           siteId ?? this.siteId,
+
+      fileName:
+          fileName ?? this.fileName,
 
       filePath:
           filePath ?? this.filePath,
