@@ -59,7 +59,7 @@ class AuthService {
 
     // TODO: Replace with your actual admin email(s)
     const admins = [
-      'admin@yourcompany.com',
+      'construction@sunny.com',
     ];
 
     return admins.contains(email);
