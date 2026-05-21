@@ -77,3 +77,5 @@ class PrivateWorkerSummary {
   final double balance;
   PrivateWorkerSummary({this.lastSite, this.lastDate, required this.balance});
 }
+
+
