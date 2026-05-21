@@ -1,45 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'core/router/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (d) => debugPrint('ERROR: ${d.exception}');
 
-  FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrint('FLUTTER ERROR => ${details.exception}');
-  };
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
 
-  const supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: '',
-  );
+  assert(supabaseUrl.isNotEmpty, 'SUPABASE_URL must be set via --dart-define');
+  assert(supabaseAnonKey.isNotEmpty, 'SUPABASE_ANON_KEY must be set via --dart-define');
 
-  const supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: '',
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  assert(
-    supabaseUrl.isNotEmpty,
-    'SUPABASE_URL must be provided via --dart-define=SUPABASE_URL=...',
-  );
-  assert(
-    supabaseAnonKey.isNotEmpty,
-    'SUPABASE_ANON_KEY must be provided via --dart-define=SUPABASE_ANON_KEY=...',
-  );
-
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
-
-  runApp(
-    const ProviderScope(
-      child: ConstructionManagerApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: ConstructionManagerApp()));
 }
 
 class ConstructionManagerApp extends StatelessWidget {
@@ -52,8 +28,24 @@ class ConstructionManagerApp extends StatelessWidget {
       title: 'Construction Manager',
       routerConfig: appRouter,
       theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
+        colorSchemeSeed: Colors.deepOrange,
         useMaterial3: true,
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        appBarTheme: const AppBarTheme(centerTitle: true),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
       ),
     );
   }
