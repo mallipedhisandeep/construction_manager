@@ -1,7 +1,7 @@
 {
-  "buildCommand": "flutter build web --release --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY",
+  "buildCommand": "export PATH=$PATH:/opt/flutter/bin && flutter build web --release --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY",
   "outputDirectory": "build/web",
-  "installCommand": "git config --global --add safe.directory /vercel/path0 && curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.0-stable.tar.xz | tar -xJ -C /opt && export PATH=$PATH:/opt/flutter/bin && flutter pub get",
+  "installCommand": "git config --global --add safe.directory /vercel/path0 && git config --global --add safe.directory /opt/flutter && curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.0-stable.tar.xz | tar -xJ -C /opt && export PATH=$PATH:/opt/flutter/bin && flutter pub get",
   "framework": null,
   "rewrites": [
     {
