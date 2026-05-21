@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,8 +7,7 @@ import '../../../core/services/storage_service.dart';
 import '../data/site_floor_file_dao.dart';
 import '../data/site_floor_file_model.dart';
 
-class FloorFilesPage
-    extends StatefulWidget {
+class FloorFilesPage extends StatefulWidget {
   final String siteId;
 
   final int floorNo;
@@ -24,22 +22,16 @@ class FloorFilesPage
   });
 
   @override
-  State<FloorFilesPage>
-      createState() =>
-          _FloorFilesPageState();
+  State<FloorFilesPage> createState() =>
+      _FloorFilesPageState();
 }
 
 class _FloorFilesPageState
-    extends State<
-        FloorFilesPage> {
+    extends State<FloorFilesPage> {
   final SiteFloorFileDao _dao =
       SiteFloorFileDao();
 
   bool isUploading = false;
-
-  // =========================
-  // ADD FILE
-  // =========================
 
   Future<void> _addFile() async {
     try {
@@ -54,9 +46,7 @@ class _FloorFilesPageState
       );
 
       if (count >= 4) {
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         ScaffoldMessenger.of(
           context,
@@ -101,17 +91,13 @@ class _FloorFilesPageState
           await StorageService.instance
               .uploadWebFile(
         bytes: bytes,
-        folder:
-            'floor_files',
+        folder: 'floor_files',
         fileName:
             firebaseFileName,
       );
 
-      if (url == null ||
-          url.isEmpty) {
-        throw Exception(
-          'Upload failed',
-        );
+      if (url == null) {
+        return;
       }
 
       final model =
@@ -124,23 +110,21 @@ class _FloorFilesPageState
             pickedFile.name,
         filePath: url,
         uploadedAt:
-            Timestamp.now(),
+            DateTime.now(),
       );
 
       await _dao.insert(
         model,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(
         const SnackBar(
           content: Text(
-            'File uploaded successfully',
+            'File uploaded',
           ),
         ),
       );
@@ -148,18 +132,6 @@ class _FloorFilesPageState
       debugPrint(
         'ADD FLOOR FILE ERROR => $e',
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error: $e',
-            ),
-          ),
-        );
-      }
     } finally {
       if (mounted) {
         setState(() {
@@ -168,10 +140,6 @@ class _FloorFilesPageState
       }
     }
   }
-
-  // =========================
-  // DELETE FILE
-  // =========================
 
   Future<void> _delete(
     SiteFloorFileModel file,
@@ -185,78 +153,31 @@ class _FloorFilesPageState
       await _dao.delete(
         file.id!,
       );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'File deleted',
-          ),
-        ),
-      );
     } catch (e) {
       debugPrint(
         'DELETE FLOOR FILE ERROR => $e',
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error: $e',
-            ),
-          ),
-        );
-      }
     }
   }
-
-  // =========================
-  // OPEN FILE
-  // =========================
 
   Future<void> _openFile(
     String url,
   ) async {
-    try {
-      final uri =
-          Uri.parse(url);
+    final uri =
+        Uri.parse(url);
 
-      await launchUrl(
-        uri,
-        mode:
-            LaunchMode
-                .externalApplication,
-      );
-    } catch (e) {
-      debugPrint(
-        'OPEN FILE ERROR => $e',
-      );
-    }
+    await launchUrl(uri);
   }
 
-  // =========================
-  // FORMAT DATE
-  // =========================
-
   String _formatTimestamp(
-    Timestamp? timestamp,
+    DateTime? timestamp,
   ) {
     if (timestamp == null) {
       return '-';
     }
 
-    final date =
-        timestamp.toDate();
-
-    return '${date.day}/${date.month}/${date.year}';
+    return
+        '${timestamp.day}/${timestamp.month}/${timestamp.year}';
   }
 
   @override
@@ -266,7 +187,6 @@ class _FloorFilesPageState
         title:
             Text(widget.floorName),
       ),
-
       floatingActionButton:
           FloatingActionButton(
         onPressed:
@@ -286,16 +206,14 @@ class _FloorFilesPageState
                 Icons.upload_file,
               ),
       ),
-
       body:
           StreamBuilder<
               List<
                   SiteFloorFileModel>>(
-        stream: _dao.watchFiles(
+        stream: _dao.watchAll(
           widget.siteId,
           widget.floorNo,
         ),
-
         builder:
             (context, snapshot) {
           if (snapshot
@@ -305,14 +223,6 @@ class _FloorFilesPageState
             return const Center(
               child:
                   CircularProgressIndicator(),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-              ),
             );
           }
 
@@ -330,7 +240,6 @@ class _FloorFilesPageState
           return ListView.builder(
             itemCount:
                 files.length,
-
             itemBuilder:
                 (_, i) {
               final file =
@@ -342,28 +251,24 @@ class _FloorFilesPageState
                   horizontal: 12,
                   vertical: 6,
                 ),
-
                 child: ListTile(
                   leading:
                       const Icon(
                     Icons
                         .insert_drive_file,
                   ),
-
                   title: Text(
                     file.fileName,
                   ),
-
                   subtitle: Text(
-                    'Uploaded: ${_formatTimestamp(file.uploadedAt)}',
+                    'Uploaded: '
+                    '${_formatTimestamp(file.uploadedAt)}',
                   ),
-
                   onTap: () {
                     _openFile(
                       file.filePath,
                     );
                   },
-
                   trailing:
                       IconButton(
                     icon:

@@ -1,32 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'private_worker_model.dart';
 
 class PrivateWorkerDao {
-  // =========================
-  // COLLECTIONS
-  // =========================
-
-  final CollectionReference<
-          Map<String, dynamic>>
-      _collection =
-      FirebaseService.instance
-          .privateWorkers;
-
-  final CollectionReference<
-          Map<String, dynamic>>
-      _workCollection =
-      FirebaseService.instance
-          .privateWork;
-
-  final CollectionReference<
-          Map<String, dynamic>>
-      _paymentCollection =
-      FirebaseService.instance
-          .privateWorkerPayments;
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   // =========================
   // GET ALL
@@ -35,20 +15,21 @@ class PrivateWorkerDao {
   Future<List<PrivateWorker>>
       getAll() async {
     try {
-      final snapshot =
-          await _collection
-              .orderBy(
+      final response =
+          await _supabase
+              .privateWorkers
+              .select()
+              .order(
                 'created_at',
-                descending: true,
-              )
-              .get();
+                ascending: false,
+              );
 
-      return snapshot.docs
-          .map(
+      return response
+          .map<PrivateWorker>(
             (e) =>
                 PrivateWorker.fromMap(
-              e.data(),
-              e.id,
+              e,
+              e['id'].toString(),
             ),
           )
           .toList();
@@ -69,15 +50,15 @@ class PrivateWorkerDao {
     PrivateWorker worker,
   ) async {
     try {
-      await _collection.add(
+      await _supabase
+          .privateWorkers
+          .insert(
         worker.toMap(),
       );
     } catch (e) {
       debugPrint(
         'INSERT PRIVATE WORKER ERROR => $e',
       );
-
-      rethrow;
     }
   }
 
@@ -93,17 +74,19 @@ class PrivateWorkerDao {
         return;
       }
 
-      await _collection
-          .doc(worker.id)
+      await _supabase
+          .privateWorkers
           .update(
             worker.toMap(),
+          )
+          .eq(
+            'id',
+            worker.id!,
           );
     } catch (e) {
       debugPrint(
         'UPDATE PRIVATE WORKER ERROR => $e',
       );
-
-      rethrow;
     }
   }
 
@@ -115,15 +98,17 @@ class PrivateWorkerDao {
     String id,
   ) async {
     try {
-      await _collection
-          .doc(id)
-          .delete();
+      await _supabase
+          .privateWorkers
+          .delete()
+          .eq(
+            'id',
+            id,
+          );
     } catch (e) {
       debugPrint(
         'DELETE PRIVATE WORKER ERROR => $e',
       );
-
-      rethrow;
     }
   }
 
@@ -136,23 +121,23 @@ class PrivateWorkerDao {
     String workerId,
   ) async {
     try {
-      final workSnapshot =
-          await _workCollection
-              .where(
+      final workResponse =
+          await _supabase
+              .privateWork
+              .select()
+              .eq(
                 'worker_id',
-                isEqualTo:
-                    workerId,
-              )
-              .get();
+                workerId,
+              );
 
-      final paymentSnapshot =
-          await _paymentCollection
-              .where(
+      final paymentResponse =
+          await _supabase
+              .privateWorkerPayments
+              .select()
+              .eq(
                 'worker_id',
-                isEqualTo:
-                    workerId,
-              )
-              .get();
+                workerId,
+              );
 
       double totalCharged = 0;
 
@@ -162,11 +147,8 @@ class PrivateWorkerDao {
 
       String? lastDate;
 
-      for (final doc
-          in workSnapshot.docs) {
-        final data =
-            doc.data();
-
+      for (final data
+          in workResponse) {
         totalCharged +=
             ((data['price_charged'] ??
                         0)
@@ -180,27 +162,22 @@ class PrivateWorkerDao {
                 .toDouble();
 
         lastSite =
-            data['site_name']
-                ?.toString();
+            data['site_name'];
 
         lastDate =
-            data['work_date']
-                ?.toString();
+            data['work_date'];
       }
 
-      for (final doc
-          in paymentSnapshot.docs) {
-        final data =
-            doc.data();
-
+      for (final data
+          in paymentResponse) {
         final amount =
-            ((data['amount'] ?? 0)
+            ((data['amount'] ??
+                        0)
                     as num)
                 .toDouble();
 
         final direction =
-            data['direction']
-                ?.toString();
+            data['direction'];
 
         if (direction ==
             'dad_to_worker') {

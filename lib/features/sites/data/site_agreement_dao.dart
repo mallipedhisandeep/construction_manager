@@ -3,68 +3,64 @@ import '../../../core/services/supabase_service.dart';
 import 'site_agreement_model.dart';
 
 class SiteAgreementDao {
-
   final SupabaseService _supabase =
       SupabaseService.instance;
 
-  Future<void> insertAgreement(
-    SiteAgreementModel agreement,
-  ) async {
+  // =========================
+  // WATCH BY SITE
+  // =========================
 
+  Stream<List<SiteAgreementModel>>
+      watchAllBySite(
+    String siteId,
+  ) {
+    return _supabase
+        .siteAgreements
+        .stream(
+          primaryKey: ['id'],
+        )
+        .eq('site_id', siteId)
+        .order(
+          'created_at',
+          ascending: false,
+        )
+        .map(
+      (rows) {
+        return rows
+            .map(
+              (e) =>
+                  SiteAgreementModel.fromMap(
+                e,
+                e['id'].toString(),
+              ),
+            )
+            .toList();
+      },
+    );
+  }
+
+  // =========================
+  // INSERT
+  // =========================
+
+  Future<void> insertAgreement(
+    SiteAgreementModel model,
+  ) async {
     await _supabase.siteAgreements
         .insert(
-          agreement.toMap(),
-        );
+      model.toMap(),
+    );
   }
 
-  Future<List<SiteAgreementModel>>
-      getBySite(
-    String siteId,
-  ) async {
-
-    try {
-
-      final response =
-          await _supabase
-              .siteAgreements
-              .select()
-              .eq(
-                'site_id',
-                siteId,
-              )
-              .order(
-                'created_at',
-                ascending: false,
-              );
-
-      return (response as List)
-          .map(
-        (doc) {
-
-          return SiteAgreementModel
-              .fromMap(
-            doc,
-            doc['id'].toString(),
-          );
-        },
-      ).toList();
-
-    } catch (e) {
-
-      return [];
-    }
-  }
+  // =========================
+  // DELETE
+  // =========================
 
   Future<void> deleteAgreement(
     String id,
   ) async {
-
-    await _supabase
-        .siteAgreements
+    await _supabase.siteAgreements
         .delete()
-        .eq(
-          'id',
-          id,
-        );
+        .eq('id', id);
   }
 }

@@ -3,8 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   SupabaseService._internal();
 
-  static final SupabaseService
-      instance =
+  static final SupabaseService instance =
       SupabaseService._internal();
 
   final SupabaseClient client =
@@ -14,41 +13,25 @@ class SupabaseService {
   // TABLES
   // =========================
 
-  SupabaseQueryBuilder
-      get workers =>
-          client.from(
-            'workers',
-          );
+  SupabaseQueryBuilder get workers =>
+      client.from('workers');
 
-  SupabaseQueryBuilder
-      get attendance =>
-          client.from(
-            'attendance',
-          );
+  SupabaseQueryBuilder get attendance =>
+      client.from('attendance');
 
-  SupabaseQueryBuilder
-      get sites =>
-          client.from(
-            'sites',
-          );
+  SupabaseQueryBuilder get sites =>
+      client.from('sites');
 
-  SupabaseQueryBuilder
-      get privateWorkers =>
-          client.from(
-            'private_workers',
-          );
+  SupabaseQueryBuilder get privateWorkers =>
+      client.from('private_workers');
 
-  SupabaseQueryBuilder
-      get privateWork =>
-          client.from(
-            'private_work',
-          );
+  SupabaseQueryBuilder get privateWork =>
+      client.from('private_work');
 
-  SupabaseQueryBuilder
-      get privateWorkerPayments =>
-          client.from(
-            'private_worker_payments',
-          );
+  SupabaseQueryBuilder get privateWorkerPayments =>
+      client.from(
+        'private_worker_payments',
+      );
 
   SupabaseQueryBuilder
       get siteAgreements =>
@@ -72,9 +55,8 @@ class SupabaseService {
   // STORAGE
   // =========================
 
-  SupabaseStorageClient
-      get storage =>
-          client.storage;
+  SupabaseStorageClient get storage =>
+      client.storage;
 
   // =========================
   // AUTH
@@ -82,12 +64,6 @@ class SupabaseService {
 
   GoTrueClient get auth =>
       client.auth;
-
-  User? get currentUser =>
-      auth.currentUser;
-
-  String? get currentUserId =>
-      auth.currentUser?.id;
 
   // =========================
   // HELPERS
@@ -100,29 +76,18 @@ class SupabaseService {
   String errorMessage(
     Object error,
   ) {
-    if (error
-        is PostgrestException) {
+    if (error is PostgrestException) {
       return error.message;
     }
 
-    if (error
-        is AuthException) {
+    if (error is AuthException) {
       return error.message;
     }
 
-    if (error
-        is StorageException) {
+    if (error is StorageException) {
       return error.message;
     }
 
     return error.toString();
-  }
-
-  bool get isLoggedIn {
-    return currentUser != null;
-  }
-
-  Future<void> signOut() async {
-    await auth.signOut();
   }
 }

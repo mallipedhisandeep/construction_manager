@@ -3,69 +3,64 @@ import '../../../core/services/supabase_service.dart';
 import 'site_elevation_model.dart';
 
 class SiteElevationDao {
-
   final SupabaseService _supabase =
       SupabaseService.instance;
+
+  // =========================
+  // WATCH BY SITE
+  // =========================
+
+  Stream<List<SiteElevationModel>>
+      watchAllBySite(
+    String siteId,
+  ) {
+    return _supabase
+        .siteElevations
+        .stream(
+          primaryKey: ['id'],
+        )
+        .eq('site_id', siteId)
+        .order(
+          'created_at',
+          ascending: false,
+        )
+        .map(
+      (rows) {
+        return rows
+            .map(
+              (e) =>
+                  SiteElevationModel.fromMap(
+                e,
+                e['id'].toString(),
+              ),
+            )
+            .toList();
+      },
+    );
+  }
+
+  // =========================
+  // INSERT
+  // =========================
 
   Future<void> insert(
     SiteElevationModel model,
   ) async {
-
-    await _supabase
-        .siteElevations
+    await _supabase.siteElevations
         .insert(
-          model.toMap(),
-        );
+      model.toMap(),
+    );
   }
 
-  Future<List<SiteElevationModel>>
-      getBySite(
-    String siteId,
-  ) async {
-
-    try {
-
-      final response =
-          await _supabase
-              .siteElevations
-              .select()
-              .eq(
-                'site_id',
-                siteId,
-              )
-              .order(
-                'created_at',
-                ascending: false,
-              );
-
-      return (response as List)
-          .map(
-        (doc) {
-
-          return SiteElevationModel
-              .fromMap(
-            doc,
-            doc['id'].toString(),
-          );
-        },
-      ).toList();
-
-    } catch (e) {
-
-      return [];
-    }
-  }
+  // =========================
+  // DELETE
+  // =========================
 
   Future<void> delete(
     String id,
   ) async {
-
-    await _supabase
-        .siteElevations
+    await _supabase.siteElevations
         .delete()
-        .eq(
-          'id',
-          id,
-        );
+        .eq('id', id);
   }
 }

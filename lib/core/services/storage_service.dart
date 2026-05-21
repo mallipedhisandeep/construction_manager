@@ -1,10 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageService {
-
   StorageService._();
 
   static final StorageService instance =
@@ -13,22 +10,19 @@ class StorageService {
   final SupabaseClient _client =
       Supabase.instance.client;
 
+  static const String _bucket =
+      'construction-files';
+
   // ==============================
   // WEB FILE UPLOAD
   // ==============================
 
   Future<String?> uploadWebFile({
-
     required Uint8List bytes,
-
     required String folder,
-
     required String fileName,
-
   }) async {
-
     try {
-
       final cleanFileName =
           fileName.replaceAll(
         ' ',
@@ -39,7 +33,7 @@ class StorageService {
           '$folder/$cleanFileName';
 
       await _client.storage
-          .from('construction-files')
+          .from(_bucket)
           .uploadBinary(
             path,
             bytes,
@@ -51,15 +45,11 @@ class StorageService {
 
       final url =
           _client.storage
-              .from(
-                'construction-files',
-              )
+              .from(_bucket)
               .getPublicUrl(path);
 
       return url;
-
     } catch (e) {
-
       debugPrint(
         'WEB UPLOAD ERROR => $e',
       );
@@ -73,19 +63,40 @@ class StorageService {
   // ==============================
 
   Future<void> deleteFile(
-    String path,
+    String urlOrPath,
   ) async {
-
     try {
+      String path = urlOrPath;
+
+      if (urlOrPath.startsWith(
+        'http',
+      )) {
+        final uri =
+            Uri.parse(urlOrPath);
+
+        final segments =
+            uri.pathSegments;
+
+        final bucketIndex =
+            segments.indexOf(
+          _bucket,
+        );
+
+        if (bucketIndex != -1 &&
+            bucketIndex + 1 <
+                segments.length) {
+          path = segments
+              .sublist(
+                bucketIndex + 1,
+              )
+              .join('/');
+        }
+      }
 
       await _client.storage
-          .from(
-            'construction-files',
-          )
+          .from(_bucket)
           .remove([path]);
-
     } catch (e) {
-
       debugPrint(
         'DELETE FILE ERROR => $e',
       );

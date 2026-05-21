@@ -1,25 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'attendance_model.dart';
 import 'attendance_month_summary.dart';
 
 class AttendanceDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
-
-  // =========================
-  // DATE KEY
-  // =========================
-
-  String _dateKey(
-    DateTime date,
-  ) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
-  }
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   // =========================
   // GET ATTENDANCE FOR DAY
@@ -31,30 +19,34 @@ class AttendanceDao {
     required DateTime date,
   }) async {
     try {
-      final snapshot =
-          await _firebase.attendance
-              .where(
-                'worker_id',
-                isEqualTo: workerId,
-              )
-              .where(
-                'date_key',
-                isEqualTo:
-                    _dateKey(date),
-              )
-              .limit(1)
-              .get();
+      final dateKey =
+          '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
 
-      if (snapshot.docs.isEmpty) {
+      final response =
+          await _supabase.attendance
+              .select()
+              .eq(
+                'worker_id',
+                workerId,
+              )
+              .eq(
+                'date_key',
+                dateKey,
+              )
+              .limit(1);
+
+      if (response.isEmpty) {
         return null;
       }
 
-      final doc =
-          snapshot.docs.first;
+      final data =
+          response.first;
 
       return AttendanceModel.fromMap(
-        doc.data(),
-        doc.id,
+        data,
+        data['id'].toString(),
       );
     } catch (e) {
       debugPrint(
@@ -75,39 +67,33 @@ class AttendanceDao {
     DateTime date,
   ) async {
     try {
-      final startDate =
-          DateTime(
-        date.year,
-        date.month,
-        date.day,
-      );
-
-      final snapshot =
-          await _firebase.attendance
-              .where(
+      final response =
+          await _supabase.attendance
+              .select()
+              .eq(
                 'worker_id',
-                isEqualTo: workerId,
+                workerId,
               )
-              .where(
+              .lt(
                 'date',
-                isLessThan:
-                    Timestamp.fromDate(
-                  startDate,
-                ),
+                DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                ).toIso8601String(),
               )
-              .orderBy(
+              .order(
                 'date',
-                descending: true,
+                ascending: false,
               )
-              .limit(1)
-              .get();
+              .limit(1);
 
-      if (snapshot.docs.isEmpty) {
+      if (response.isEmpty) {
         return 0;
       }
 
       final data =
-          snapshot.docs.first.data();
+          response.first;
 
       return ((data['balance_after'] ??
                   0)
@@ -115,7 +101,7 @@ class AttendanceDao {
           .toDouble();
     } catch (e) {
       debugPrint(
-        'BALANCE BEFORE DATE ERROR => $e',
+        'BALANCE ERROR => $e',
       );
 
       return 0;
@@ -123,7 +109,7 @@ class AttendanceDao {
   }
 
   // =========================
-  // SAVE OR UPDATE
+  // SAVE / UPDATE
   // =========================
 
   Future<void>
@@ -146,44 +132,42 @@ class AttendanceDao {
       );
 
       final existing =
-          await _firebase.attendance
-              .where(
+          await _supabase.attendance
+              .select()
+              .eq(
                 'worker_id',
-                isEqualTo:
-                    corrected.workerId,
+                corrected.workerId,
               )
-              .where(
+              .eq(
                 'date_key',
-                isEqualTo:
-                    corrected.dateKey,
+                corrected.dateKey,
               )
-              .limit(1)
-              .get();
+              .limit(1);
 
-      if (existing.docs.isNotEmpty) {
+      if (existing.isNotEmpty) {
         final existingId =
-            existing.docs.first.id;
+            existing.first['id'];
 
-        await _firebase.attendance
-            .doc(existingId)
-            .set(
+        await _supabase.attendance
+            .update(
               corrected.toMap(),
-              SetOptions(
-                merge: true,
-              ),
+            )
+            .eq(
+              'id',
+              existingId,
             );
-      } else {
-        await _firebase.attendance
-            .add(
-          corrected.toMap(),
-        );
+
+        return;
       }
+
+      await _supabase.attendance
+          .insert(
+        corrected.toMap(),
+      );
     } catch (e) {
       debugPrint(
         'SAVE ATTENDANCE ERROR => $e',
       );
-
-      rethrow;
     }
   }
 
@@ -227,18 +211,16 @@ class AttendanceDao {
         workerId: workerId,
         siteId: null,
         date: prevDate,
-        attendanceType:
-            'Absent',
+        attendanceType: 'Absent',
         wage: 0,
         advance: 0,
         paymentMode: 'None',
         paymentRef: null,
-        balanceAfter:
-            baseBalance,
+        balanceAfter: baseBalance,
       );
 
-      await _firebase.attendance
-          .add(
+      await _supabase.attendance
+          .insert(
         absent.toMap(),
       );
     } catch (e) {
@@ -249,7 +231,7 @@ class AttendanceDao {
   }
 
   // =========================
-  // MONTH SUMMARY
+  // MONTHLY SUMMARY
   // =========================
 
   Future<AttendanceMonthSummary>
@@ -260,11 +242,7 @@ class AttendanceDao {
   }) async {
     try {
       final monthStart =
-          DateTime(
-        year,
-        month,
-        1,
-      );
+          DateTime(year, month, 1);
 
       final monthEnd =
           month == 12
@@ -285,27 +263,23 @@ class AttendanceDao {
         monthStart,
       );
 
-      final snapshot =
-          await _firebase.attendance
-              .where(
+      final response =
+          await _supabase.attendance
+              .select()
+              .eq(
                 'worker_id',
-                isEqualTo: workerId,
+                workerId,
               )
-              .where(
+              .gte(
                 'date',
-                isGreaterThanOrEqualTo:
-                    Timestamp.fromDate(
-                  monthStart,
-                ),
+                monthStart
+                    .toIso8601String(),
               )
-              .where(
+              .lt(
                 'date',
-                isLessThan:
-                    Timestamp.fromDate(
-                  monthEnd,
-                ),
-              )
-              .get();
+                monthEnd
+                    .toIso8601String(),
+              );
 
       double earned = 0;
 
@@ -314,14 +288,10 @@ class AttendanceDao {
       final Map<String, int>
           daysByType = {};
 
-      for (final doc
-          in snapshot.docs) {
-        final r = doc.data();
-
+      for (final r in response) {
         final type =
-            (r['attendance_type'] ??
-                    'Unknown')
-                .toString();
+            r['attendance_type']
+                as String;
 
         earned +=
             ((r['wage'] ?? 0)
@@ -347,7 +317,8 @@ class AttendanceDao {
       return AttendanceMonthSummary(
         daysByType:
             daysByType,
-        totalEarned: earned,
+        totalEarned:
+            earned,
         totalAdvance:
             advance,
         openingBalance:
