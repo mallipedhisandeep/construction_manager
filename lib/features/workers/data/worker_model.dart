@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class WorkerModel {
+
   final String? id;
 
   final String name;
@@ -29,34 +28,48 @@ class WorkerModel {
 
   final String? notes;
 
-  final Timestamp createdAt;
+  final DateTime createdAt;
 
   WorkerModel({
-    this.id,
-    required this.name,
-    required this.phone,
-    required this.gender,
-    required this.state,
-    required this.role,
-    required this.workType,
-    required this.rate6to6,
-    required this.rate10to6,
-    required this.rate6to10,
-    required this.rate6to2,
-    required this.rate10to2,
-    required this.rate2to6,
-    this.notes,
-    Timestamp? createdAt,
-  }) : createdAt =
-           createdAt ??
-           Timestamp.now();
 
-  // =========================
-  // TO MAP
-  // =========================
+    this.id,
+
+    required this.name,
+
+    required this.phone,
+
+    required this.gender,
+
+    required this.state,
+
+    required this.role,
+
+    required this.workType,
+
+    required this.rate6to6,
+
+    required this.rate10to6,
+
+    required this.rate6to10,
+
+    required this.rate6to2,
+
+    required this.rate10to2,
+
+    required this.rate2to6,
+
+    this.notes,
+
+    DateTime? createdAt,
+
+  }) : createdAt =
+          createdAt ??
+          DateTime.now();
 
   Map<String, dynamic> toMap() {
+
     return {
+
       'name': name,
 
       'phone': phone,
@@ -84,19 +97,17 @@ class WorkerModel {
       'notes': notes,
 
       'created_at':
-          createdAt,
+          createdAt.toIso8601String(),
     };
   }
-
-  // =========================
-  // FROM MAP
-  // =========================
 
   factory WorkerModel.fromMap(
     Map<String, dynamic> map,
     String documentId,
   ) {
+
     return WorkerModel(
+
       id: documentId,
 
       name:
@@ -145,8 +156,11 @@ class WorkerModel {
           map['notes'],
 
       createdAt:
-          map['created_at'] ??
-              Timestamp.now(),
+          map['created_at'] != null
+              ? DateTime.parse(
+                  map['created_at'],
+                )
+              : DateTime.now(),
     );
   }
 }

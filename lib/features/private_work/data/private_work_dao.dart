@@ -1,42 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'private_work_model.dart';
 
 class PrivateWorkDao {
-  final CollectionReference<
-          Map<String, dynamic>>
-      _collection =
-      FirebaseService.instance
-          .privateWork;
 
-  // =========================
-  // REALTIME STREAM
-  // =========================
-
-  Stream<List<PrivateWork>>
-      watchAll() {
-    return _collection
-        .orderBy(
-          'created_at',
-          descending: true,
-        )
-        .snapshots()
-        .map(
-      (snapshot) {
-        return snapshot.docs
-            .map(
-              (doc) =>
-                  PrivateWork.fromMap(
-                doc.data(),
-                doc.id,
-              ),
-            )
-            .toList();
-      },
-    );
-  }
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   // =========================
   // GET ALL
@@ -44,25 +13,29 @@ class PrivateWorkDao {
 
   Future<List<PrivateWork>>
       getAll() async {
-    try {
-      final snapshot =
-          await _collection
-              .orderBy(
-                'created_at',
-                descending: true,
-              )
-              .get();
 
-      return snapshot.docs
-          .map(
-            (e) =>
-                PrivateWork.fromMap(
-              e.data(),
-              e.id,
-            ),
-          )
-          .toList();
+    try {
+
+      final response =
+          await _supabase.privateWork
+              .select()
+              .order(
+                'created_at',
+                ascending: false,
+              );
+
+      return (response as List)
+          .map((e) {
+
+        return PrivateWork.fromMap(
+          e,
+          e['id'].toString(),
+        );
+
+      }).toList();
+
     } catch (e) {
+
       return [];
     }
   }
@@ -74,9 +47,11 @@ class PrivateWorkDao {
   Future<void> insert(
     PrivateWork work,
   ) async {
-    await _collection.add(
-      work.toMap(),
-    );
+
+    await _supabase.privateWork
+        .insert(
+          work.toMap(),
+        );
   }
 
   // =========================
@@ -86,14 +61,18 @@ class PrivateWorkDao {
   Future<void> update(
     PrivateWork work,
   ) async {
+
     if (work.id == null) {
       return;
     }
 
-    await _collection
-        .doc(work.id)
+    await _supabase.privateWork
         .update(
           work.toMap(),
+        )
+        .eq(
+          'id',
+          work.id!,
         );
   }
 
@@ -104,8 +83,12 @@ class PrivateWorkDao {
   Future<void> delete(
     String id,
   ) async {
-    await _collection
-        .doc(id)
-        .delete();
+
+    await _supabase.privateWork
+        .delete()
+        .eq(
+          'id',
+          id,
+        );
   }
 }

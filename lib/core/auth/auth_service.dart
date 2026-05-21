@@ -1,34 +1,41 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
+
   AuthService._internal();
 
   static final AuthService instance =
       AuthService._internal();
 
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  final SupabaseClient _client =
+      Supabase.instance.client;
 
   User? get currentUser =>
-      _auth.currentUser;
+      _client.auth.currentUser;
 
-  Stream<User?> authStateChanges() {
-    return _auth.authStateChanges();
+  Stream<AuthState> authStateChanges() {
+    return _client.auth.onAuthStateChange;
   }
 
   // =========================
   // EMAIL LOGIN
   // =========================
 
-  Future<UserCredential>
-      signInWithEmail({
+  Future<void> signInWithEmail({
+
     required String email,
+
     required String password,
+
   }) async {
-    return await _auth
-        .signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password.trim(),
+
+    await _client.auth.signInWithPassword(
+
+      email:
+          email.trim(),
+
+      password:
+          password.trim(),
     );
   }
 
@@ -36,28 +43,22 @@ class AuthService {
   // CREATE ACCOUNT
   // =========================
 
-  Future<UserCredential>
-      createAccount({
+  Future<void> createAccount({
+
     required String email,
+
     required String password,
+
   }) async {
-    return await _auth
-        .createUserWithEmailAndPassword(
-      email: email.trim(),
-      password: password.trim(),
+
+    await _client.auth.signUp(
+
+      email:
+          email.trim(),
+
+      password:
+          password.trim(),
     );
-  }
-
-  // =========================
-  // ANONYMOUS LOGIN
-  // =========================
-
-  Future<void> signInAnonymously() async {
-    if (_auth.currentUser != null) {
-      return;
-    }
-
-    await _auth.signInAnonymously();
   }
 
   // =========================
@@ -65,7 +66,8 @@ class AuthService {
   // =========================
 
   Future<void> signOut() async {
-    await _auth.signOut();
+
+    await _client.auth.signOut();
   }
 
   // =========================
@@ -73,11 +75,14 @@ class AuthService {
   // =========================
 
   bool get isAdmin {
+
     final email =
-        _auth.currentUser?.email;
+        _client.auth.currentUser?.email;
 
     const admins = [
+
       'yourmainadmin@gmail.com',
+
       'secondadmin@gmail.com',
     ];
 

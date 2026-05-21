@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../data/private_work_dao.dart';
 import '../data/private_work_model.dart';
 
@@ -118,17 +119,26 @@ class _AddEditPrivateWorkPageState
               .getAllSites();
 
       if (widget.work != null) {
-        worker = workers.firstWhere(
-          (e) =>
-              e.id ==
-              widget.work!.workerId,
-        );
+        try {
+          worker =
+              workers.firstWhere(
+            (e) =>
+                e.id ==
+                widget
+                    .work!
+                    .workerId,
+          );
+        } catch (_) {}
 
-        site = sites.firstWhere(
-          (e) =>
-              e.id ==
-              widget.work!.siteId,
-        );
+        try {
+          site = sites.firstWhere(
+            (e) =>
+                e.id ==
+                widget
+                    .work!
+                    .siteId,
+          );
+        } catch (_) {}
 
         date = DateTime.parse(
           widget.work!.workDate,
@@ -175,14 +185,17 @@ class _AddEditPrivateWorkPageState
             children: [
               DropdownButtonFormField<
                   PrivateWorker>(
-                initialValue: worker,
+                initialValue:
+                    worker,
                 items: workers
                     .map(
                       (w) =>
                           DropdownMenuItem(
                         value: w,
                         child:
-                            Text(w.name),
+                            Text(
+                          w.name,
+                        ),
                       ),
                     )
                     .toList(),
@@ -200,7 +213,8 @@ class _AddEditPrivateWorkPageState
                 },
                 decoration:
                     const InputDecoration(
-                  labelText: 'Worker',
+                  labelText:
+                      'Worker',
                   border:
                       OutlineInputBorder(),
                 ),
@@ -221,7 +235,8 @@ class _AddEditPrivateWorkPageState
 
               DropdownButtonFormField<
                   SiteModel>(
-                initialValue: site,
+                initialValue:
+                    site,
                 items: sites
                     .map(
                       (s) =>
@@ -247,7 +262,8 @@ class _AddEditPrivateWorkPageState
                 },
                 decoration:
                     const InputDecoration(
-                  labelText: 'Site',
+                  labelText:
+                      'Site',
                   border:
                       OutlineInputBorder(),
                 ),
@@ -263,18 +279,22 @@ class _AddEditPrivateWorkPageState
                 title: Text(
                   'Date: ${date.toIso8601String().split('T').first}',
                 ),
-                trailing: const Icon(
-                  Icons.calendar_today,
+                trailing:
+                    const Icon(
+                  Icons
+                      .calendar_today,
                 ),
                 onTap: () async {
                   final DateTime? d =
                       await showDatePicker(
-                    context: context,
+                    context:
+                        context,
                     firstDate:
                         DateTime(2000),
                     lastDate:
                         DateTime(2100),
-                    initialDate: date,
+                    initialDate:
+                        date,
                   );
 
                   if (d != null) {
@@ -290,9 +310,11 @@ class _AddEditPrivateWorkPageState
               ),
 
               TextFormField(
-                controller: price,
+                controller:
+                    price,
                 keyboardType:
-                    TextInputType.number,
+                    TextInputType
+                        .number,
                 decoration:
                     const InputDecoration(
                   labelText:
@@ -302,7 +324,8 @@ class _AddEditPrivateWorkPageState
                 ),
                 validator: (v) {
                   if (v == null ||
-                      v.trim().isEmpty) {
+                      v.trim()
+                          .isEmpty) {
                     return 'Required';
                   }
 
@@ -315,9 +338,11 @@ class _AddEditPrivateWorkPageState
               ),
 
               TextFormField(
-                controller: paid,
+                controller:
+                    paid,
                 keyboardType:
-                    TextInputType.number,
+                    TextInputType
+                        .number,
                 decoration:
                     const InputDecoration(
                   labelText:
@@ -333,10 +358,12 @@ class _AddEditPrivateWorkPageState
 
               DropdownButtonFormField<
                   String>(
-                initialValue: status,
+                initialValue:
+                    status,
                 decoration:
                     const InputDecoration(
-                  labelText: 'Status',
+                  labelText:
+                      'Status',
                   border:
                       OutlineInputBorder(),
                 ),
@@ -366,10 +393,12 @@ class _AddEditPrivateWorkPageState
               ),
 
               TextFormField(
-                controller: notes,
+                controller:
+                    notes,
                 decoration:
                     const InputDecoration(
-                  labelText: 'Notes',
+                  labelText:
+                      'Notes',
                   border:
                       OutlineInputBorder(),
                 ),
@@ -388,11 +417,13 @@ class _AddEditPrivateWorkPageState
                 child:
                     isSaving
                         ? const SizedBox(
-                            height: 22,
+                            height:
+                                22,
                             width: 22,
                             child:
                                 CircularProgressIndicator(
-                              strokeWidth: 2,
+                              strokeWidth:
+                                  2,
                             ),
                           )
                         : Text(
@@ -428,7 +459,8 @@ class _AddEditPrivateWorkPageState
       final PrivateWork work =
           PrivateWork(
         id: widget.work?.id,
-        workerId: worker!.id!,
+        workerId:
+            worker!.id!,
         workerName:
             worker!.name,
         workType:
@@ -445,10 +477,13 @@ class _AddEditPrivateWorkPageState
           price.text.trim(),
         ),
         amountPaid:
-            paid.text.trim().isEmpty
+            paid.text
+                    .trim()
+                    .isEmpty
                 ? 0
                 : double.parse(
-                    paid.text.trim(),
+                    paid.text
+                        .trim(),
                   ),
         status: status,
         notes:
@@ -459,10 +494,15 @@ class _AddEditPrivateWorkPageState
                 Timestamp.now(),
       );
 
-      if (widget.work == null) {
-        await _dao.insert(work);
+      if (widget.work ==
+          null) {
+        await _dao.insert(
+          work,
+        );
       } else {
-        await _dao.update(work);
+        await _dao.update(
+          work,
+        );
       }
 
       if (!mounted) {

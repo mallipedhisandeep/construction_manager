@@ -11,10 +11,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # =========================
-  # UI
-  # =========================
-
   cupertino_icons: ^1.0.8
   intl: ^0.20.2
 
@@ -27,13 +23,10 @@ dependencies:
   open_file: ^3.5.10
 
   # =========================
-  # FIREBASE
+  # SUPABASE
   # =========================
 
-  firebase_core: ^4.0.0
-  cloud_firestore: ^6.0.0
-  firebase_storage: ^13.0.0
-  firebase_auth: ^6.0.0
+  supabase_flutter: ^2.9.1
 
   # =========================
   # STATE MANAGEMENT

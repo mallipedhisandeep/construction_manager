@@ -1,112 +1,70 @@
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'site_agreement_model.dart';
 
 class SiteAgreementDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
 
-  // ==============================
-  // INSERT AGREEMENT
-  // ==============================
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   Future<void> insertAgreement(
     SiteAgreementModel agreement,
   ) async {
-    try {
-      await _firebase.siteAgreements
-          .add(
-        agreement.toMap(),
-      );
-    } catch (e) {
-      rethrow;
-    }
-  }
 
-  // ==============================
-  // GET AGREEMENTS BY SITE
-  // ==============================
+    await _supabase.siteAgreements
+        .insert(
+          agreement.toMap(),
+        );
+  }
 
   Future<List<SiteAgreementModel>>
       getBySite(
     String siteId,
   ) async {
-    try {
-      final snapshot =
-          await _firebase
-              .siteAgreements
-              .where(
-                'site_id',
-                isEqualTo: siteId,
-              )
-              .orderBy(
-                'created_at',
-                descending: true,
-              )
-              .get();
 
-      return snapshot.docs.map(
+    try {
+
+      final response =
+          await _supabase
+              .siteAgreements
+              .select()
+              .eq(
+                'site_id',
+                siteId,
+              )
+              .order(
+                'created_at',
+                ascending: false,
+              );
+
+      return (response as List)
+          .map(
         (doc) {
+
           return SiteAgreementModel
               .fromMap(
-            doc.data(),
-            doc.id,
+            doc,
+            doc['id'].toString(),
           );
         },
       ).toList();
+
     } catch (e) {
+
       return [];
     }
   }
 
-  // ==============================
-  // REALTIME STREAM
-  // ==============================
-
-  Stream<List<SiteAgreementModel>>
-      watchBySite(
-    String siteId,
-  ) {
-    return _firebase
-        .siteAgreements
-        .where(
-          'site_id',
-          isEqualTo: siteId,
-        )
-        .orderBy(
-          'created_at',
-          descending: true,
-        )
-        .snapshots()
-        .map(
-      (snapshot) {
-        return snapshot.docs.map(
-          (doc) {
-            return SiteAgreementModel
-                .fromMap(
-              doc.data(),
-              doc.id,
-            );
-          },
-        ).toList();
-      },
-    );
-  }
-
-  // ==============================
-  // DELETE AGREEMENT
-  // ==============================
-
   Future<void> deleteAgreement(
     String id,
   ) async {
-    try {
-      await _firebase
-          .siteAgreements
-          .doc(id)
-          .delete();
-    } catch (e) {
-      rethrow;
-    }
+
+    await _supabase
+        .siteAgreements
+        .delete()
+        .eq(
+          'id',
+          id,
+        );
   }
 }

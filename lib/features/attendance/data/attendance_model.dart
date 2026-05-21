@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AttendanceModel {
+
   final String? id;
 
   final String workerId;
@@ -21,50 +20,55 @@ class AttendanceModel {
 
   final double balanceAfter;
 
-  final Timestamp createdAt;
+  final DateTime createdAt;
 
   AttendanceModel({
-    this.id,
-    required this.workerId,
-    this.siteId,
-    required this.date,
-    required this.attendanceType,
-    required this.wage,
-    required this.advance,
-    required this.paymentMode,
-    this.paymentRef,
-    required this.balanceAfter,
-    Timestamp? createdAt,
-  }) : createdAt =
-           createdAt ??
-           Timestamp.now();
 
-  // =========================
-  // DATE KEY
-  // =========================
+    this.id,
+
+    required this.workerId,
+
+    this.siteId,
+
+    required this.date,
+
+    required this.attendanceType,
+
+    required this.wage,
+
+    required this.advance,
+
+    required this.paymentMode,
+
+    this.paymentRef,
+
+    required this.balanceAfter,
+
+    DateTime? createdAt,
+
+  }) : createdAt =
+          createdAt ??
+          DateTime.now();
 
   String get dateKey =>
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 
-  // =========================
-  // TO MAP
-  // =========================
-
   Map<String, dynamic> toMap() {
+
     return {
+
       'worker_id': workerId,
 
       'site_id': siteId,
 
-      'date': Timestamp.fromDate(
-        DateTime(
-          date.year,
-          date.month,
-          date.day,
-        ),
-      ),
+      'date':
+          DateTime(
+            date.year,
+            date.month,
+            date.day,
+          ).toIso8601String(),
 
       'date_key': dateKey,
 
@@ -78,28 +82,24 @@ class AttendanceModel {
       'payment_mode':
           paymentMode,
 
-      'payment_ref': paymentRef,
+      'payment_ref':
+          paymentRef,
 
       'balance_after':
           balanceAfter,
 
       'created_at':
-          createdAt,
+          createdAt.toIso8601String(),
     };
   }
-
-  // =========================
-  // FROM MAP
-  // =========================
 
   factory AttendanceModel.fromMap(
     Map<String, dynamic> map,
     String documentId,
   ) {
-    final Timestamp timestamp =
-        map['date'];
 
     return AttendanceModel(
+
       id: documentId,
 
       workerId:
@@ -109,7 +109,9 @@ class AttendanceModel {
           map['site_id'],
 
       date:
-          timestamp.toDate(),
+          DateTime.parse(
+            map['date'],
+          ),
 
       attendanceType:
           map['attendance_type'] ??
@@ -136,19 +138,20 @@ class AttendanceModel {
               .toDouble(),
 
       createdAt:
-          map['created_at'] ??
-              Timestamp.now(),
+          map['created_at'] != null
+              ? DateTime.parse(
+                  map['created_at'],
+                )
+              : DateTime.now(),
     );
   }
-
-  // =========================
-  // COPY WITH
-  // =========================
 
   AttendanceModel copyWith({
     double? balanceAfter,
   }) {
+
     return AttendanceModel(
+
       id: id,
 
       workerId: workerId,
@@ -174,7 +177,8 @@ class AttendanceModel {
           balanceAfter ??
               this.balanceAfter,
 
-      createdAt: createdAt,
+      createdAt:
+          createdAt,
     );
   }
 }

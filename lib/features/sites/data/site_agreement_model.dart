@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class SiteAgreementModel {
+
   final String? id;
 
   final String siteId;
@@ -9,13 +8,18 @@ class SiteAgreementModel {
 
   final String fileName;
 
-  final Timestamp? createdAt;
+  final DateTime? createdAt;
 
   SiteAgreementModel({
+
     this.id,
+
     required this.siteId,
+
     required this.filePath,
+
     required this.fileName,
+
     this.createdAt,
   });
 
@@ -24,7 +28,9 @@ class SiteAgreementModel {
   // ==============================
 
   Map<String, dynamic> toMap() {
+
     return {
+
       'site_id': siteId,
 
       'file_path': filePath,
@@ -32,8 +38,9 @@ class SiteAgreementModel {
       'file_name': fileName,
 
       'created_at':
-          createdAt ??
-              FieldValue.serverTimestamp(),
+          (createdAt ??
+                  DateTime.now())
+              .toIso8601String(),
     };
   }
 
@@ -45,7 +52,9 @@ class SiteAgreementModel {
     Map<String, dynamic> map,
     String documentId,
   ) {
+
     return SiteAgreementModel(
+
       id: documentId,
 
       siteId:
@@ -58,7 +67,11 @@ class SiteAgreementModel {
           map['file_name'] ?? '',
 
       createdAt:
-          map['created_at'],
+          map['created_at'] != null
+              ? DateTime.parse(
+                  map['created_at'],
+                )
+              : null,
     );
   }
 
@@ -67,14 +80,23 @@ class SiteAgreementModel {
   // ==============================
 
   SiteAgreementModel copyWith({
+
     String? id,
+
     String? siteId,
+
     String? filePath,
+
     String? fileName,
-    Timestamp? createdAt,
+
+    DateTime? createdAt,
+
   }) {
+
     return SiteAgreementModel(
-      id: id ?? this.id,
+
+      id:
+          id ?? this.id,
 
       siteId:
           siteId ?? this.siteId,

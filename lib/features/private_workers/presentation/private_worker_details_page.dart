@@ -77,6 +77,12 @@ class _PrivateWorkerDetailsPageState
       );
     }
 
+    final currentSummary =
+        summary ??
+            PrivateWorkerSummary(
+              balance: 0,
+            );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -86,7 +92,8 @@ class _PrivateWorkerDetailsPageState
           IconButton(
             icon:
                 const Icon(Icons.delete),
-            onPressed: deleteWorker,
+            onPressed:
+                deleteWorker,
           ),
         ],
       ),
@@ -114,9 +121,11 @@ class _PrivateWorkerDetailsPageState
                 IconButton(
                   icon: const Icon(
                     Icons.call,
-                    color: Colors.green,
+                    color:
+                        Colors.green,
                   ),
-                  onPressed: () async {
+                  onPressed:
+                      () async {
                     final Uri uri =
                         Uri.parse(
                       'tel:${widget.worker.phone}',
@@ -135,7 +144,7 @@ class _PrivateWorkerDetailsPageState
             ),
 
             Text(
-              'Last Site: ${summary?.lastSite ?? '-'}',
+              'Last Site: ${currentSummary.lastSite ?? '-'}',
             ),
 
             const SizedBox(
@@ -143,7 +152,7 @@ class _PrivateWorkerDetailsPageState
             ),
 
             Text(
-              'Last Date: ${summary?.lastDate ?? '-'}',
+              'Last Date: ${currentSummary.lastDate ?? '-'}',
             ),
 
             const SizedBox(
@@ -151,21 +160,22 @@ class _PrivateWorkerDetailsPageState
             ),
 
             Text(
-              summary!.balance == 0
+              currentSummary.balance ==
+                      0
                   ? 'Balance Settled'
-                  : summary!.balance > 0
-                      ? 'Dad should give ₹${summary!.balance.toStringAsFixed(0)}'
-                      : 'Worker should give ₹${summary!.balance.abs().toStringAsFixed(0)}',
+                  : currentSummary.balance >
+                          0
+                      ? 'Dad should give ₹${currentSummary.balance.toStringAsFixed(0)}'
+                      : 'Worker should give ₹${currentSummary.balance.abs().toStringAsFixed(0)}',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight:
                     FontWeight.bold,
                 color:
-                    summary!.balance ==
+                    currentSummary.balance ==
                             0
                         ? Colors.grey
-                        : summary!
-                                    .balance >
+                        : currentSummary.balance >
                                 0
                             ? Colors.green
                             : Colors.red,
@@ -178,11 +188,14 @@ class _PrivateWorkerDetailsPageState
 
             ElevatedButton.icon(
               icon:
-                  const Icon(Icons.edit),
+                  const Icon(
+                Icons.edit,
+              ),
               label: const Text(
                 'Edit Worker',
               ),
-              onPressed: () async {
+              onPressed:
+                  () async {
                 final ok =
                     await Navigator.push(
                   context,
@@ -212,7 +225,8 @@ class _PrivateWorkerDetailsPageState
               label: const Text(
                 'Add Payment',
               ),
-              onPressed: addPayment,
+              onPressed:
+                  addPayment,
             ),
 
             const SizedBox(
@@ -221,7 +235,9 @@ class _PrivateWorkerDetailsPageState
 
             ElevatedButton.icon(
               icon:
-                  const Icon(Icons.history),
+                  const Icon(
+                Icons.history,
+              ),
               label: const Text(
                 'Payment History',
               ),
@@ -333,7 +349,8 @@ class _PrivateWorkerDetailsPageState
 
                   DropdownButtonFormField<
                       String>(
-                    initialValue: mode,
+                    initialValue:
+                        mode,
                     decoration:
                         const InputDecoration(
                       labelText:
@@ -390,41 +407,69 @@ class _PrivateWorkerDetailsPageState
               ),
 
               ElevatedButton(
-                onPressed: () async {
+                onPressed:
+                    () async {
                   if (amount <= 0) {
                     return;
                   }
 
-                  await _paymentDao.insert(
-                    PrivateWorkerPayment(
-                      workerId:
-                          widget.worker.id!,
-                      amount: amount,
-                      direction:
-                          direction,
-                      mode: mode,
-                      date: DateTime.now()
-                          .toIso8601String()
-                          .split('T')
-                          .first,
-                      source: 'manual',
-                      notes:
-                          noteCtrl.text
-                              .trim(),
-                      createdAt:
-                          Timestamp.now(),
-                    ),
-                  );
+                  try {
+                    await _paymentDao
+                        .insert(
+                      PrivateWorkerPayment(
+                        workerId:
+                            widget
+                                .worker
+                                .id!,
+                        amount:
+                            amount,
+                        direction:
+                            direction,
+                        mode: mode,
+                        date: DateTime.now()
+                            .toIso8601String()
+                            .split(
+                              'T',
+                            )
+                            .first,
+                        source:
+                            'manual',
+                        notes:
+                            noteCtrl
+                                .text
+                                .trim(),
+                        createdAt:
+                            Timestamp.now(),
+                      ),
+                    );
 
-                  if (!mounted) {
-                    return;
+                    if (!mounted) {
+                      return;
+                    }
+
+                    Navigator.pop(
+                      context,
+                    );
+
+                    await load();
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text(
+                            'Payment added',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint(
+                      'ADD PAYMENT ERROR => $e',
+                    );
                   }
-
-                  Navigator.pop(
-                    context,
-                  );
-
-                  await load();
                 },
                 child:
                     const Text(
@@ -487,17 +532,23 @@ class _PrivateWorkerDetailsPageState
       return;
     }
 
-    await _dao.delete(
-      widget.worker.id!,
-    );
+    try {
+      await _dao.delete(
+        widget.worker.id!,
+      );
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(
+        context,
+        true,
+      );
+    } catch (e) {
+      debugPrint(
+        'DELETE WORKER ERROR => $e',
+      );
     }
-
-    Navigator.pop(
-      context,
-      true,
-    );
   }
 }

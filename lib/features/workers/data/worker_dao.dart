@@ -1,10 +1,11 @@
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'worker_model.dart';
 
 class WorkerDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
+
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   // =========================
   // ADD WORKER
@@ -13,39 +14,51 @@ class WorkerDao {
   Future<void> insertWorker(
     WorkerModel worker,
   ) async {
-    await _firebase.workers.add(
+
+    await _supabase.workers.insert(
       worker.toMap(),
     );
   }
 
   // =========================
-  // REALTIME WORKERS STREAM
+  // WATCH WORKERS
   // =========================
 
   Stream<List<WorkerModel>>
-      watchWorkers() {
-    return _firebase.workers
+      watchWorkers() async* {
 
-        .orderBy('work_type')
+    while (true) {
 
-        .orderBy('state')
+      final response =
+          await _supabase.workers
+              .select()
+              .order(
+                'work_type',
+              )
+              .order(
+                'state',
+              )
+              .order(
+                'role',
+              )
+              .order(
+                'name',
+              );
 
-        .orderBy('role')
+      yield (response as List)
+          .map((item) {
 
-        .orderBy('name')
-
-        .snapshots()
-
-        .map((snapshot) {
-      return snapshot.docs.map((
-        doc,
-      ) {
         return WorkerModel.fromMap(
-          doc.data(),
-          doc.id,
+          item,
+          item['id'].toString(),
         );
+
       }).toList();
-    });
+
+      await Future.delayed(
+        const Duration(seconds: 2),
+      );
+    }
   }
 
   // =========================
@@ -54,34 +67,31 @@ class WorkerDao {
 
   Future<List<WorkerModel>>
       getAllWorkers() async {
-    final snapshot =
-        await _firebase.workers
 
-            .orderBy(
+    final response =
+        await _supabase.workers
+            .select()
+            .order(
               'work_type',
             )
-
-            .orderBy(
+            .order(
               'state',
             )
-
-            .orderBy(
+            .order(
               'role',
             )
-
-            .orderBy(
+            .order(
               'name',
-            )
+            );
 
-            .get();
+    return (response as List)
+        .map((item) {
 
-    return snapshot.docs.map((
-      doc,
-    ) {
       return WorkerModel.fromMap(
-        doc.data(),
-        doc.id,
+        item,
+        item['id'].toString(),
       );
+
     }).toList();
   }
 
@@ -92,10 +102,14 @@ class WorkerDao {
   Future<void> updateWorker(
     WorkerModel worker,
   ) async {
-    await _firebase.workers
-        .doc(worker.id)
+
+    await _supabase.workers
         .update(
           worker.toMap(),
+        )
+        .eq(
+          'id',
+          worker.id!,
         );
   }
 
@@ -106,8 +120,12 @@ class WorkerDao {
   Future<void> deleteWorker(
     String id,
   ) async {
-    await _firebase.workers
-        .doc(id)
-        .delete();
+
+    await _supabase.workers
+        .delete()
+        .eq(
+          'id',
+          id,
+        );
   }
 }

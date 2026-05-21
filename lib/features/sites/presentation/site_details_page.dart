@@ -20,7 +20,8 @@ import '../data/site_model.dart';
 import 'floor_files_page.dart';
 import 'site_form_page.dart';
 
-class SiteDetailsPage extends StatefulWidget {
+class SiteDetailsPage
+    extends StatefulWidget {
   final SiteModel site;
 
   const SiteDetailsPage({
@@ -29,35 +30,57 @@ class SiteDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<SiteDetailsPage> createState() =>
-      _SiteDetailsPageState();
+  State<SiteDetailsPage>
+      createState() =>
+          _SiteDetailsPageState();
 }
 
 class _SiteDetailsPageState
-    extends State<SiteDetailsPage> {
-  final SiteDao _dao = SiteDao();
+    extends State<
+        SiteDetailsPage> {
+  final SiteDao _dao =
+      SiteDao();
 
-  final SiteAgreementDao _agreementDao =
+  final SiteAgreementDao
+      _agreementDao =
       SiteAgreementDao();
 
-  final SiteElevationDao _elevationDao =
+  final SiteElevationDao
+      _elevationDao =
       SiteElevationDao();
 
   bool isDeleting = false;
 
-  Future<PlatformFile?> pickFile() async {
-    final result =
-        await FilePicker.platform
-            .pickFiles(
-      withData: true,
-    );
+  // =========================
+  // PICK FILE
+  // =========================
 
-    if (result == null) {
+  Future<PlatformFile?> pickFile() async {
+    try {
+      final result =
+          await FilePicker.platform
+              .pickFiles(
+        withData: true,
+      );
+
+      if (result == null ||
+          result.files.isEmpty) {
+        return null;
+      }
+
+      return result.files.single;
+    } catch (e) {
+      debugPrint(
+        'PICK FILE ERROR => $e',
+      );
+
       return null;
     }
-
-    return result.files.single;
   }
+
+  // =========================
+  // FORMAT DATE
+  // =========================
 
   String _formatTimestamp(
     Timestamp? timestamp,
@@ -69,8 +92,7 @@ class _SiteDetailsPageState
     final date =
         timestamp.toDate();
 
-    return
-        '${date.day}/${date.month}/${date.year}';
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -79,7 +101,8 @@ class _SiteDetailsPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(site.siteName),
+        title:
+            Text(site.siteName),
       ),
 
       body: SingleChildScrollView(
@@ -110,12 +133,14 @@ class _SiteDetailsPageState
 
             _row(
               'Budget',
-              site.budget.toString(),
+              site.budget
+                  .toString(),
             ),
 
             _row(
               'Floors',
-              site.floorsCount.toString(),
+              site.floorsCount
+                  .toString(),
             ),
 
             _row(
@@ -128,7 +153,9 @@ class _SiteDetailsPageState
               site.notes,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(
+              height: 24,
+            ),
 
             // ======================
             // AGREEMENTS
@@ -136,7 +163,6 @@ class _SiteDetailsPageState
 
             const Text(
               'Agreements',
-
               style: TextStyle(
                 fontSize: 18,
                 fontWeight:
@@ -144,10 +170,13 @@ class _SiteDetailsPageState
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             StreamBuilder<
-                List<SiteAgreementModel>>(
+                List<
+                    SiteAgreementModel>>(
               stream:
                   _agreementDao
                       .watchBySite(
@@ -166,6 +195,13 @@ class _SiteDetailsPageState
                   );
                 }
 
+                if (snapshot
+                    .hasError) {
+                  return Text(
+                    'Error: ${snapshot.error}',
+                  );
+                }
+
                 final list =
                     snapshot.data ??
                         [];
@@ -179,32 +215,38 @@ class _SiteDetailsPageState
                 return Column(
                   children:
                       list.map(
-                    (agreement) {
+                    (
+                      agreement,
+                    ) {
                       return Card(
                         child:
                             ListTile(
                           leading:
                               const Icon(
-                            Icons.description,
+                            Icons
+                                .description,
                           ),
 
                           title: Text(
-                            agreement.fileName,
+                            agreement
+                                .fileName,
                           ),
 
-                          subtitle: Text(
+                          subtitle:
+                              Text(
                             _formatTimestamp(
                               agreement
                                   .createdAt,
                             ),
                           ),
 
-                          onTap: () async {
+                          onTap:
+                              () async {
                             await launchUrl(
                               Uri.parse(
-                                agreement.filePath,
+                                agreement
+                                    .filePath,
                               ),
-
                               mode:
                                   LaunchMode.externalApplication,
                             );
@@ -214,21 +256,19 @@ class _SiteDetailsPageState
                               Row(
                             mainAxisSize:
                                 MainAxisSize.min,
-
                             children: [
                               IconButton(
                                 icon:
                                     const Icon(
                                   Icons.open_in_new,
                                 ),
-
                                 onPressed:
                                     () async {
                                   await launchUrl(
                                     Uri.parse(
-                                      agreement.filePath,
+                                      agreement
+                                          .filePath,
                                     ),
-
                                     mode:
                                         LaunchMode.externalApplication,
                                   );
@@ -242,18 +282,25 @@ class _SiteDetailsPageState
                                   color:
                                       Colors.red,
                                 ),
-
                                 onPressed:
                                     () async {
-                                  await StorageService.instance
-                                      .deleteFile(
-                                    agreement.filePath,
-                                  );
+                                  try {
+                                    await StorageService.instance
+                                        .deleteFile(
+                                      agreement
+                                          .filePath,
+                                    );
 
-                                  await _agreementDao
-                                      .deleteAgreement(
-                                    agreement.id!,
-                                  );
+                                    await _agreementDao
+                                        .deleteAgreement(
+                                      agreement
+                                          .id!,
+                                    );
+                                  } catch (e) {
+                                    debugPrint(
+                                      'DELETE AGREEMENT ERROR => $e',
+                                    );
+                                  }
                                 },
                               ),
                             ],
@@ -266,22 +313,24 @@ class _SiteDetailsPageState
               },
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             ElevatedButton.icon(
               icon: const Icon(
                 Icons.upload_file,
               ),
-
               label: const Text(
                 'Add Agreement',
               ),
-
               onPressed:
                   _addAgreement,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(
+              height: 24,
+            ),
 
             // ======================
             // FLOORS
@@ -289,7 +338,6 @@ class _SiteDetailsPageState
 
             const Text(
               'Floors',
-
               style: TextStyle(
                 fontSize: 18,
                 fontWeight:
@@ -297,17 +345,16 @@ class _SiteDetailsPageState
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             ListView.builder(
               shrinkWrap: true,
-
               physics:
                   const NeverScrollableScrollPhysics(),
-
               itemCount:
                   site.floorsCount,
-
               itemBuilder:
                   (_, i) {
                 final floorName =
@@ -330,7 +377,6 @@ class _SiteDetailsPageState
                     onTap: () {
                       Navigator.push(
                         context,
-
                         MaterialPageRoute(
                           builder: (_) =>
                               FloorFilesPage(
@@ -349,7 +395,9 @@ class _SiteDetailsPageState
               },
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(
+              height: 24,
+            ),
 
             // ======================
             // ELEVATIONS
@@ -357,7 +405,6 @@ class _SiteDetailsPageState
 
             const Text(
               'Elevations',
-
               style: TextStyle(
                 fontSize: 18,
                 fontWeight:
@@ -365,10 +412,13 @@ class _SiteDetailsPageState
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             StreamBuilder<
-                List<SiteElevationModel>>(
+                List<
+                    SiteElevationModel>>(
               stream:
                   _elevationDao
                       .watchBySite(
@@ -387,6 +437,13 @@ class _SiteDetailsPageState
                   );
                 }
 
+                if (snapshot
+                    .hasError) {
+                  return Text(
+                    'Error: ${snapshot.error}',
+                  );
+                }
+
                 final list =
                     snapshot.data ??
                         [];
@@ -400,7 +457,9 @@ class _SiteDetailsPageState
                 return Column(
                   children:
                       list.map(
-                    (elevation) {
+                    (
+                      elevation,
+                    ) {
                       return Card(
                         child:
                             ListTile(
@@ -410,22 +469,25 @@ class _SiteDetailsPageState
                           ),
 
                           title: Text(
-                            elevation.fileName,
+                            elevation
+                                .fileName,
                           ),
 
-                          subtitle: Text(
+                          subtitle:
+                              Text(
                             _formatTimestamp(
                               elevation
                                   .createdAt,
                             ),
                           ),
 
-                          onTap: () async {
+                          onTap:
+                              () async {
                             await launchUrl(
                               Uri.parse(
-                                elevation.filePath,
+                                elevation
+                                    .filePath,
                               ),
-
                               mode:
                                   LaunchMode.externalApplication,
                             );
@@ -435,21 +497,19 @@ class _SiteDetailsPageState
                               Row(
                             mainAxisSize:
                                 MainAxisSize.min,
-
                             children: [
                               IconButton(
                                 icon:
                                     const Icon(
                                   Icons.open_in_new,
                                 ),
-
                                 onPressed:
                                     () async {
                                   await launchUrl(
                                     Uri.parse(
-                                      elevation.filePath,
+                                      elevation
+                                          .filePath,
                                     ),
-
                                     mode:
                                         LaunchMode.externalApplication,
                                   );
@@ -463,18 +523,25 @@ class _SiteDetailsPageState
                                   color:
                                       Colors.red,
                                 ),
-
                                 onPressed:
                                     () async {
-                                  await StorageService.instance
-                                      .deleteFile(
-                                    elevation.filePath,
-                                  );
+                                  try {
+                                    await StorageService.instance
+                                        .deleteFile(
+                                      elevation
+                                          .filePath,
+                                    );
 
-                                  await _elevationDao
-                                      .delete(
-                                    elevation.id!,
-                                  );
+                                    await _elevationDao
+                                        .delete(
+                                      elevation
+                                          .id!,
+                                    );
+                                  } catch (e) {
+                                    debugPrint(
+                                      'DELETE ELEVATION ERROR => $e',
+                                    );
+                                  }
                                 },
                               ),
                             ],
@@ -487,10 +554,13 @@ class _SiteDetailsPageState
               },
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             ElevatedButton.icon(
-              icon: const Icon(
+              icon:
+                  const Icon(
                 Icons.add,
               ),
 
@@ -500,57 +570,74 @@ class _SiteDetailsPageState
 
               onPressed:
                   () async {
-                final picked =
-                    await pickFile();
+                try {
+                  final picked =
+                      await pickFile();
 
-                if (picked == null) {
-                  return;
-                }
+                  if (picked ==
+                      null) {
+                    return;
+                  }
 
-                final Uint8List? bytes =
-                    picked.bytes;
+                  final Uint8List?
+                      bytes =
+                      picked.bytes;
 
-                if (bytes == null) {
-                  return;
-                }
+                  if (bytes ==
+                      null) {
+                    return;
+                  }
 
-                final firebaseFileName =
-                    '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+                  final firebaseFileName =
+                      '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
 
-                final url =
-                    await StorageService.instance
-                        .uploadWebFile(
-                  bytes: bytes,
-                  folder:
-                      'elevations',
-                  fileName:
-                      firebaseFileName,
-                );
-
-                if (url == null) {
-                  return;
-                }
-
-                await _elevationDao
-                    .insert(
-                  SiteElevationModel(
-                    siteId:
-                        widget.site.id!,
+                  final url =
+                      await StorageService
+                          .instance
+                          .uploadWebFile(
+                    bytes: bytes,
+                    folder:
+                        'elevations',
                     fileName:
-                        picked.name,
-                    filePath:
-                        url,
-                    createdAt:
-                        Timestamp.now(),
-                  ),
-                );
+                        firebaseFileName,
+                  );
+
+                  if (url ==
+                          null ||
+                      url.isEmpty) {
+                    return;
+                  }
+
+                  await _elevationDao
+                      .insert(
+                    SiteElevationModel(
+                      siteId:
+                          widget
+                              .site
+                              .id!,
+                      fileName:
+                          picked.name,
+                      filePath:
+                          url,
+                      createdAt:
+                          Timestamp.now(),
+                    ),
+                  );
+                } catch (e) {
+                  debugPrint(
+                    'ADD ELEVATION ERROR => $e',
+                  );
+                }
               },
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(
+              height: 30,
+            ),
 
             ElevatedButton.icon(
-              icon: const Icon(
+              icon:
+                  const Icon(
                 Icons.edit,
               ),
 
@@ -561,10 +648,13 @@ class _SiteDetailsPageState
               onPressed:
                   () async {
                 final navigator =
-                    Navigator.of(context);
+                    Navigator.of(
+                  context,
+                );
 
                 final changed =
-                    await navigator.push(
+                    await navigator
+                        .push(
                   MaterialPageRoute(
                     builder: (_) =>
                         SiteFormPage(
@@ -577,7 +667,8 @@ class _SiteDetailsPageState
                   return;
                 }
 
-                if (changed == true) {
+                if (changed ==
+                    true) {
                   navigator.pop(
                     true,
                   );
@@ -585,10 +676,13 @@ class _SiteDetailsPageState
               },
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             ElevatedButton.icon(
-              icon: const Icon(
+              icon:
+                  const Icon(
                 Icons.delete,
               ),
 
@@ -617,53 +711,51 @@ class _SiteDetailsPageState
     );
   }
 
+  // =========================
+  // DELETE SITE
+  // =========================
+
   Future<void> _deleteSite() async {
     final confirm =
         await showDialog<bool>(
       context: context,
-
-      builder: (_) =>
-          AlertDialog(
-        title:
-            const Text(
-          'Delete Site',
-        ),
-
-        content:
-            const Text(
-          'Are you sure you want to delete this site?',
-        ),
-
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(
-                context,
-                false,
-              );
-            },
-
-            child:
+      builder:
+          (_) => AlertDialog(
+            title:
                 const Text(
-              'Cancel',
+              'Delete Site',
             ),
-          ),
-
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(
-                context,
-                true,
-              );
-            },
-
-            child:
+            content:
                 const Text(
-              'Delete',
+              'Are you sure you want to delete this site?',
             ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(
+                    context,
+                    false,
+                  );
+                },
+                child:
+                    const Text(
+                  'Cancel',
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(
+                    context,
+                    true,
+                  );
+                },
+                child:
+                    const Text(
+                  'Delete',
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirm != true) {
@@ -692,19 +784,17 @@ class _SiteDetailsPageState
         'DELETE SITE ERROR => $e',
       );
 
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error: $e',
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error: $e',
+            ),
           ),
-        ),
-      );
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -714,65 +804,98 @@ class _SiteDetailsPageState
     }
   }
 
+  // =========================
+  // ADD AGREEMENT
+  // =========================
+
   Future<void> _addAgreement() async {
-    final result =
-        await FilePicker.platform
-            .pickFiles(
-      withData: true,
-      type: FileType.custom,
-      allowedExtensions: [
-        'pdf',
-        'jpg',
-        'jpeg',
-        'png',
-      ],
-    );
+    try {
+      final result =
+          await FilePicker.platform
+              .pickFiles(
+        withData: true,
+        type:
+            FileType.custom,
+        allowedExtensions: [
+          'pdf',
+          'jpg',
+          'jpeg',
+          'png',
+        ],
+      );
 
-    if (result == null) {
-      return;
+      if (result == null ||
+          result.files.isEmpty) {
+        return;
+      }
+
+      final picked =
+          result.files.first;
+
+      final Uint8List? bytes =
+          picked.bytes;
+
+      if (bytes == null) {
+        return;
+      }
+
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
+
+      final url =
+          await StorageService
+              .instance
+              .uploadWebFile(
+        bytes: bytes,
+        folder:
+            'agreements',
+        fileName: fileName,
+      );
+
+      if (url == null ||
+          url.isEmpty) {
+        return;
+      }
+
+      final agreement =
+          SiteAgreementModel(
+        siteId:
+            widget.site.id!,
+        filePath: url,
+        fileName:
+            picked.name,
+        createdAt:
+            Timestamp.now(),
+      );
+
+      await _agreementDao
+          .insertAgreement(
+        agreement,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Agreement uploaded',
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint(
+        'ADD AGREEMENT ERROR => $e',
+      );
     }
-
-    final picked =
-        result.files.first;
-
-    final Uint8List? bytes =
-        picked.bytes;
-
-    if (bytes == null) {
-      return;
-    }
-
-    final fileName =
-        '${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
-
-    final url =
-        await StorageService.instance
-            .uploadWebFile(
-      bytes: bytes,
-      folder: 'agreements',
-      fileName: fileName,
-    );
-
-    if (url == null) {
-      return;
-    }
-
-    final agreement =
-        SiteAgreementModel(
-      siteId:
-          widget.site.id!,
-      filePath: url,
-      fileName:
-          picked.name,
-      createdAt:
-          Timestamp.now(),
-    );
-
-    await _agreementDao
-        .insertAgreement(
-      agreement,
-    );
   }
+
+  // =========================
+  // ROW
+  // =========================
 
   Widget _row(
     String label,
@@ -783,10 +906,8 @@ class _SiteDetailsPageState
           const EdgeInsets.symmetric(
         vertical: 4,
       ),
-
       child: Text(
         '$label : ${value ?? '-'}',
-
         style:
             const TextStyle(
           fontSize: 16,
@@ -794,6 +915,10 @@ class _SiteDetailsPageState
       ),
     );
   }
+
+  // =========================
+  // OWNER PHONE
+  // =========================
 
   Widget _ownerPhoneRow() {
     final phone =
@@ -812,13 +937,11 @@ class _SiteDetailsPageState
           const EdgeInsets.symmetric(
         vertical: 6,
       ),
-
       child: Row(
         children: [
           Expanded(
             child: Text(
               'Owner Phone : $phone',
-
               style:
                   const TextStyle(
                 fontSize: 16,
@@ -830,9 +953,9 @@ class _SiteDetailsPageState
             icon:
                 const Icon(
               Icons.call,
-              color: Colors.green,
+              color:
+                  Colors.green,
             ),
-
             onPressed:
                 () async {
               final uri =

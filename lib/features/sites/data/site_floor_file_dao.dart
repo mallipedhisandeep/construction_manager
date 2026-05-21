@@ -1,151 +1,90 @@
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'site_floor_file_model.dart';
 
 class SiteFloorFileDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
 
-  // ==============================
-  // GET FILES
-  // ==============================
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   Future<List<SiteFloorFileModel>>
       getFiles(
     String siteId,
     int floorNo,
   ) async {
-    try {
-      final snapshot =
-          await _firebase
-              .siteFloorFiles
-              .where(
-                'site_id',
-                isEqualTo: siteId,
-              )
-              .where(
-                'floor_no',
-                isEqualTo: floorNo,
-              )
-              .orderBy(
-                'uploaded_at',
-                descending: true,
-              )
-              .get();
 
-      return snapshot.docs.map(
+    try {
+
+      final response =
+          await _supabase
+              .siteFloorFiles
+              .select()
+              .eq(
+                'site_id',
+                siteId,
+              )
+              .eq(
+                'floor_no',
+                floorNo,
+              )
+              .order(
+                'uploaded_at',
+                ascending: false,
+              );
+
+      return (response as List)
+          .map(
         (doc) {
+
           return SiteFloorFileModel
               .fromMap(
-            doc.data(),
-            doc.id,
+            doc,
+            doc['id'].toString(),
           );
         },
       ).toList();
+
     } catch (e) {
+
       return [];
     }
   }
-
-  // ==============================
-  // REALTIME STREAM
-  // ==============================
-
-  Stream<List<SiteFloorFileModel>>
-      watchFiles(
-    String siteId,
-    int floorNo,
-  ) {
-    return _firebase
-        .siteFloorFiles
-        .where(
-          'site_id',
-          isEqualTo: siteId,
-        )
-        .where(
-          'floor_no',
-          isEqualTo: floorNo,
-        )
-        .orderBy(
-          'uploaded_at',
-          descending: true,
-        )
-        .snapshots()
-        .map(
-      (snapshot) {
-        return snapshot.docs.map(
-          (doc) {
-            return SiteFloorFileModel
-                .fromMap(
-              doc.data(),
-              doc.id,
-            );
-          },
-        ).toList();
-      },
-    );
-  }
-
-  // ==============================
-  // COUNT FILES
-  // ==============================
 
   Future<int> countFiles(
     String siteId,
     int floorNo,
   ) async {
-    try {
-      final snapshot =
-          await _firebase
-              .siteFloorFiles
-              .where(
-                'site_id',
-                isEqualTo: siteId,
-              )
-              .where(
-                'floor_no',
-                isEqualTo: floorNo,
-              )
-              .get();
 
-      return snapshot.docs.length;
-    } catch (e) {
-      return 0;
-    }
+    final files =
+        await getFiles(
+      siteId,
+      floorNo,
+    );
+
+    return files.length;
   }
-
-  // ==============================
-  // INSERT FILE
-  // ==============================
 
   Future<void> insert(
     SiteFloorFileModel model,
   ) async {
-    try {
-      await _firebase
-          .siteFloorFiles
-          .add(
-        model.toMap(),
-      );
-    } catch (e) {
-      rethrow;
-    }
-  }
 
-  // ==============================
-  // DELETE FILE
-  // ==============================
+    await _supabase
+        .siteFloorFiles
+        .insert(
+          model.toMap(),
+        );
+  }
 
   Future<void> delete(
     String id,
   ) async {
-    try {
-      await _firebase
-          .siteFloorFiles
-          .doc(id)
-          .delete();
-    } catch (e) {
-      rethrow;
-    }
+
+    await _supabase
+        .siteFloorFiles
+        .delete()
+        .eq(
+          'id',
+          id,
+        );
   }
 }

@@ -1,50 +1,65 @@
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageService {
+
   StorageService._();
 
   static final StorageService instance =
       StorageService._();
 
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance;
+  final SupabaseClient _client =
+      Supabase.instance.client;
 
   // ==============================
   // WEB FILE UPLOAD
   // ==============================
 
   Future<String?> uploadWebFile({
+
     required Uint8List bytes,
+
     required String folder,
+
     required String fileName,
+
   }) async {
+
     try {
+
       final cleanFileName =
           fileName.replaceAll(
         ' ',
         '_',
       );
 
-      final ref = _storage
-          .ref()
-          .child(folder)
-          .child(cleanFileName);
+      final path =
+          '$folder/$cleanFileName';
 
-      final metadata = SettableMetadata(
-        contentType:
-            _getContentType(
-          cleanFileName,
-        ),
-      );
+      await _client.storage
+          .from('construction-files')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions:
+                const FileOptions(
+              upsert: true,
+            ),
+          );
 
-      await ref.putData(
-        bytes,
-        metadata,
-      );
+      final url =
+          _client.storage
+              .from(
+                'construction-files',
+              )
+              .getPublicUrl(path);
 
-      return await ref.getDownloadURL();
+      return url;
+
     } catch (e) {
+
       debugPrint(
         'WEB UPLOAD ERROR => $e',
       );
@@ -58,46 +73,22 @@ class StorageService {
   // ==============================
 
   Future<void> deleteFile(
-    String url,
+    String path,
   ) async {
-    try {
-      if (url.isEmpty) {
-        return;
-      }
 
-      await _storage
-          .refFromURL(url)
-          .delete();
+    try {
+
+      await _client.storage
+          .from(
+            'construction-files',
+          )
+          .remove([path]);
+
     } catch (e) {
+
       debugPrint(
         'DELETE FILE ERROR => $e',
       );
     }
-  }
-
-  // ==============================
-  // CONTENT TYPE
-  // ==============================
-
-  String _getContentType(
-    String fileName,
-  ) {
-    final lower =
-        fileName.toLowerCase();
-
-    if (lower.endsWith('.pdf')) {
-      return 'application/pdf';
-    }
-
-    if (lower.endsWith('.png')) {
-      return 'image/png';
-    }
-
-    if (lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg')) {
-      return 'image/jpeg';
-    }
-
-    return 'application/octet-stream';
   }
 }

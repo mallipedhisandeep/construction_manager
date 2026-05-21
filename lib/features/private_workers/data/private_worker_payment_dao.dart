@@ -1,17 +1,14 @@
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'private_worker_payment_model.dart';
 
 class PrivateWorkerPaymentDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
 
-  // ==============================
-  // COLLECTION
-  // ==============================
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   dynamic get _collection =>
-      _firebase.privateWorkerPayments;
+      _supabase.privateWorkerPayments;
 
   // ==============================
   // INSERT
@@ -20,7 +17,8 @@ class PrivateWorkerPaymentDao {
   Future<void> insert(
     PrivateWorkerPayment payment,
   ) async {
-    await _collection.add(
+
+    await _collection.insert(
       payment.toMap(),
     );
   }
@@ -33,28 +31,30 @@ class PrivateWorkerPaymentDao {
       getByWorker(
     String workerId,
   ) async {
-    final snapshot =
-        await _collection
-            .where(
-              'workerId',
-              isEqualTo: workerId,
-            )
-            .orderBy(
-              'createdAt',
-              descending: true,
-            )
-            .get();
 
-    return snapshot.docs
+    final response =
+        await _collection
+            .select()
+            .eq(
+              'workerId',
+              workerId,
+            )
+            .order(
+              'createdAt',
+              ascending: false,
+            );
+
+    return (response as List)
         .map(
-          (doc) =>
-              PrivateWorkerPayment
-                  .fromMap(
-            doc.data(),
-            doc.id,
-          ),
-        )
-        .toList();
+      (doc) {
+
+        return PrivateWorkerPayment
+            .fromMap(
+          doc,
+          doc['id'].toString(),
+        );
+      },
+    ).toList();
   }
 
   // ==============================
@@ -64,8 +64,12 @@ class PrivateWorkerPaymentDao {
   Future<void> delete(
     String id,
   ) async {
+
     await _collection
-        .doc(id)
-        .delete();
+        .delete()
+        .eq(
+          'id',
+          id,
+        );
   }
 }

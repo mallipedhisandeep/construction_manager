@@ -1,13 +1,10 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'firebase_options.dart';
-
-import 'core/auth/auth_service.dart';
 import 'core/router/app_router.dart';
 
-void main() async {
+Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,14 +16,14 @@ void main() async {
     );
   };
 
-  await Firebase.initializeApp(
-    options:
-        DefaultFirebaseOptions
-            .currentPlatform,
-  );
+  await Supabase.initialize(
 
-  await AuthService.instance
-      .signInAnonymously();
+    url:
+        'YOUR_SUPABASE_PROJECT_URL',
+
+    anonKey:
+        'YOUR_SUPABASE_ANON_KEY',
+  );
 
   runApp(
     const ProviderScope(

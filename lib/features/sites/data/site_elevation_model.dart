@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class SiteElevationModel {
+
   final String? id;
 
   final String siteId;
@@ -9,13 +8,18 @@ class SiteElevationModel {
 
   final String filePath;
 
-  final Timestamp? createdAt;
+  final DateTime? createdAt;
 
   SiteElevationModel({
+
     this.id,
+
     required this.siteId,
+
     required this.fileName,
+
     required this.filePath,
+
     this.createdAt,
   });
 
@@ -24,7 +28,9 @@ class SiteElevationModel {
   // ==============================
 
   Map<String, dynamic> toMap() {
+
     return {
+
       'site_id': siteId,
 
       'file_name': fileName,
@@ -32,8 +38,9 @@ class SiteElevationModel {
       'file_path': filePath,
 
       'created_at':
-          createdAt ??
-              FieldValue.serverTimestamp(),
+          (createdAt ??
+                  DateTime.now())
+              .toIso8601String(),
     };
   }
 
@@ -45,7 +52,9 @@ class SiteElevationModel {
     Map<String, dynamic> map,
     String documentId,
   ) {
+
     return SiteElevationModel(
+
       id: documentId,
 
       siteId:
@@ -58,7 +67,11 @@ class SiteElevationModel {
           map['file_path'] ?? '',
 
       createdAt:
-          map['created_at'],
+          map['created_at'] != null
+              ? DateTime.parse(
+                  map['created_at'],
+                )
+              : null,
     );
   }
 
@@ -67,14 +80,23 @@ class SiteElevationModel {
   // ==============================
 
   SiteElevationModel copyWith({
+
     String? id,
+
     String? siteId,
+
     String? fileName,
+
     String? filePath,
-    Timestamp? createdAt,
+
+    DateTime? createdAt,
+
   }) {
+
     return SiteElevationModel(
-      id: id ?? this.id,
+
+      id:
+          id ?? this.id,
 
       siteId:
           siteId ?? this.siteId,

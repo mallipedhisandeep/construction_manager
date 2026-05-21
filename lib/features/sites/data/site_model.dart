@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class SiteModel {
+
   final String? id;
 
   final String siteName;
@@ -21,70 +20,91 @@ class SiteModel {
 
   final String? notes;
 
-  final Timestamp? createdAt;
+  final DateTime? createdAt;
 
-  final Timestamp? updatedAt;
+  final DateTime? updatedAt;
 
   SiteModel({
+
     this.id,
+
     required this.siteName,
+
     this.location,
+
     this.ownerName,
+
     this.ownerPhone,
+
     this.startDate,
+
     required this.budget,
+
     required this.floorsCount,
+
     required this.status,
+
     this.notes,
+
     this.createdAt,
+
     this.updatedAt,
   });
 
-  // ==============================
-  // TO MAP
-  // ==============================
-
   Map<String, dynamic> toMap() {
+
     return {
-      'site_name': siteName.trim(),
+
+      'site_name':
+          siteName.trim(),
 
       'site_name_search':
-          siteName.toLowerCase().trim(),
+          siteName
+              .toLowerCase()
+              .trim(),
 
-      'location': location,
+      'location':
+          location,
 
-      'owner_name': ownerName,
+      'owner_name':
+          ownerName,
 
-      'owner_phone': ownerPhone,
+      'owner_phone':
+          ownerPhone,
 
-      'start_date': startDate,
+      'start_date':
+          startDate,
 
-      'budget': budget,
+      'budget':
+          budget,
 
-      'floors_count': floorsCount,
+      'floors_count':
+          floorsCount,
 
-      'status': status,
+      'status':
+          status,
 
-      'notes': notes,
+      'notes':
+          notes,
 
       'created_at':
-          createdAt ??
-              FieldValue.serverTimestamp(),
+          (createdAt ??
+                  DateTime.now())
+              .toIso8601String(),
 
       'updated_at':
-          FieldValue.serverTimestamp(),
+          DateTime.now()
+              .toIso8601String(),
     };
   }
-
-  // ==============================
-  // FROM MAP
-  // ==============================
 
   factory SiteModel.fromMap(
     Map<String, dynamic> map,
     String documentId,
   ) {
+
     return SiteModel(
+
       id: documentId,
 
       siteName:
@@ -117,67 +137,97 @@ class SiteModel {
           map['notes'],
 
       createdAt:
-          map['created_at'],
+          map['created_at'] != null
+              ? DateTime.parse(
+                  map['created_at'],
+                )
+              : null,
 
       updatedAt:
-          map['updated_at'],
+          map['updated_at'] != null
+              ? DateTime.parse(
+                  map['updated_at'],
+                )
+              : null,
     );
   }
 
-  // ==============================
-  // COPY WITH
-  // ==============================
-
   SiteModel copyWith({
+
     String? id,
+
     String? siteName,
+
     String? location,
+
     String? ownerName,
+
     String? ownerPhone,
+
     String? startDate,
+
     double? budget,
+
     int? floorsCount,
+
     String? status,
+
     String? notes,
-    Timestamp? createdAt,
-    Timestamp? updatedAt,
+
+    DateTime? createdAt,
+
+    DateTime? updatedAt,
+
   }) {
+
     return SiteModel(
-      id: id ?? this.id,
+
+      id:
+          id ?? this.id,
 
       siteName:
-          siteName ?? this.siteName,
+          siteName ??
+              this.siteName,
 
       location:
-          location ?? this.location,
+          location ??
+              this.location,
 
       ownerName:
-          ownerName ?? this.ownerName,
+          ownerName ??
+              this.ownerName,
 
       ownerPhone:
-          ownerPhone ?? this.ownerPhone,
+          ownerPhone ??
+              this.ownerPhone,
 
       startDate:
-          startDate ?? this.startDate,
+          startDate ??
+              this.startDate,
 
       budget:
-          budget ?? this.budget,
+          budget ??
+              this.budget,
 
       floorsCount:
           floorsCount ??
               this.floorsCount,
 
       status:
-          status ?? this.status,
+          status ??
+              this.status,
 
       notes:
-          notes ?? this.notes,
+          notes ??
+              this.notes,
 
       createdAt:
-          createdAt ?? this.createdAt,
+          createdAt ??
+              this.createdAt,
 
       updatedAt:
-          updatedAt ?? this.updatedAt,
+          updatedAt ??
+              this.updatedAt,
     );
   }
 }

@@ -1,13 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/services/firebase_service.dart';
+import '../../../core/services/supabase_service.dart';
 
 import 'site_model.dart';
 
 class SiteDao {
-  final FirebaseService _firebase =
-      FirebaseService.instance;
+
+  final SupabaseService _supabase =
+      SupabaseService.instance;
 
   // ==============================
   // INSERT SITE
@@ -16,11 +16,15 @@ class SiteDao {
   Future<void> insertSite(
     SiteModel site,
   ) async {
+
     try {
-      await _firebase.sites.add(
+
+      await _supabase.sites.insert(
         site.toMap(),
       );
+
     } catch (e) {
+
       rethrow;
     }
   }
@@ -32,20 +36,24 @@ class SiteDao {
   Future<void> updateSite(
     SiteModel site,
   ) async {
+
     try {
+
       if (site.id == null) {
         return;
       }
 
-      await _firebase.sites
-          .doc(site.id)
-          .set(
+      await _supabase.sites
+          .update(
             site.toMap(),
-            SetOptions(
-              merge: true,
-            ),
+          )
+          .eq(
+            'id',
+            site.id!,
           );
+
     } catch (e) {
+
       rethrow;
     }
   }
@@ -57,11 +65,18 @@ class SiteDao {
   Future<void> deleteSite(
     String id,
   ) async {
+
     try {
-      await _firebase.sites
-          .doc(id)
-          .delete();
+
+      await _supabase.sites
+          .delete()
+          .eq(
+            'id',
+            id,
+          );
+
     } catch (e) {
+
       rethrow;
     }
   }
@@ -72,23 +87,28 @@ class SiteDao {
 
   Future<List<SiteModel>>
       getAllSites() async {
-    try {
-      final snapshot =
-          await _firebase.sites
-              .orderBy(
-                'site_name_search',
-              )
-              .get();
 
-      return snapshot.docs.map(
-        (doc) {
-          return SiteModel.fromMap(
-            doc.data(),
-            doc.id,
-          );
-        },
-      ).toList();
+    try {
+
+      final response =
+          await _supabase.sites
+              .select()
+              .order(
+                'site_name_search',
+              );
+
+      return (response as List)
+          .map((item) {
+
+        return SiteModel.fromMap(
+          item,
+          item['id'].toString(),
+        );
+
+      }).toList();
+
     } catch (e) {
+
       debugPrint(
         'GET SITES ERROR => $e',
       );
@@ -98,53 +118,31 @@ class SiteDao {
   }
 
   // ==============================
-  // REALTIME STREAM
-  // ==============================
-
-  Stream<List<SiteModel>>
-      watchSites() {
-    return _firebase.sites
-        .orderBy(
-          'site_name_search',
-        )
-        .snapshots()
-        .map(
-      (snapshot) {
-        return snapshot.docs.map(
-          (doc) {
-            return SiteModel.fromMap(
-              doc.data(),
-              doc.id,
-            );
-          },
-        ).toList();
-      },
-    );
-  }
-
-  // ==============================
   // GET BY ID
   // ==============================
 
   Future<SiteModel?> getById(
     String id,
   ) async {
-    try {
-      final doc =
-          await _firebase.sites
-              .doc(id)
-              .get();
 
-      if (!doc.exists) {
-        return null;
-      }
+    try {
+
+      final response =
+          await _supabase.sites
+              .select()
+              .eq(
+                'id',
+                id,
+              )
+              .single();
 
       return SiteModel.fromMap(
-        doc.data()
-            as Map<String, dynamic>,
-        doc.id,
+        response,
+        response['id'].toString(),
       );
+
     } catch (e) {
+
       debugPrint(
         'GET SITE ERROR => $e',
       );

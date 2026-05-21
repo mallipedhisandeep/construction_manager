@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../core/services/firebase_service.dart';
 
@@ -52,6 +53,10 @@ class PrivateWorkerDao {
           )
           .toList();
     } catch (e) {
+      debugPrint(
+        'GET PRIVATE WORKERS ERROR => $e',
+      );
+
       return [];
     }
   }
@@ -63,9 +68,17 @@ class PrivateWorkerDao {
   Future<void> insert(
     PrivateWorker worker,
   ) async {
-    await _collection.add(
-      worker.toMap(),
-    );
+    try {
+      await _collection.add(
+        worker.toMap(),
+      );
+    } catch (e) {
+      debugPrint(
+        'INSERT PRIVATE WORKER ERROR => $e',
+      );
+
+      rethrow;
+    }
   }
 
   // =========================
@@ -75,15 +88,23 @@ class PrivateWorkerDao {
   Future<void> update(
     PrivateWorker worker,
   ) async {
-    if (worker.id == null) {
-      return;
-    }
+    try {
+      if (worker.id == null) {
+        return;
+      }
 
-    await _collection
-        .doc(worker.id)
-        .update(
-          worker.toMap(),
-        );
+      await _collection
+          .doc(worker.id)
+          .update(
+            worker.toMap(),
+          );
+    } catch (e) {
+      debugPrint(
+        'UPDATE PRIVATE WORKER ERROR => $e',
+      );
+
+      rethrow;
+    }
   }
 
   // =========================
@@ -93,9 +114,17 @@ class PrivateWorkerDao {
   Future<void> delete(
     String id,
   ) async {
-    await _collection
-        .doc(id)
-        .delete();
+    try {
+      await _collection
+          .doc(id)
+          .delete();
+    } catch (e) {
+      debugPrint(
+        'DELETE PRIVATE WORKER ERROR => $e',
+      );
+
+      rethrow;
+    }
   }
 
   // =========================
@@ -139,20 +168,24 @@ class PrivateWorkerDao {
             doc.data();
 
         totalCharged +=
-            (data['price_charged'] ??
-                    0)
+            ((data['price_charged'] ??
+                        0)
+                    as num)
                 .toDouble();
 
         totalPaid +=
-            (data['amount_paid'] ??
-                    0)
+            ((data['amount_paid'] ??
+                        0)
+                    as num)
                 .toDouble();
 
         lastSite =
-            data['site_name'];
+            data['site_name']
+                ?.toString();
 
         lastDate =
-            data['work_date'];
+            data['work_date']
+                ?.toString();
       }
 
       for (final doc
@@ -161,11 +194,13 @@ class PrivateWorkerDao {
             doc.data();
 
         final amount =
-            (data['amount'] ?? 0)
+            ((data['amount'] ?? 0)
+                    as num)
                 .toDouble();
 
         final direction =
-            data['direction'];
+            data['direction']
+                ?.toString();
 
         if (direction ==
             'dad_to_worker') {
@@ -183,6 +218,10 @@ class PrivateWorkerDao {
                 totalPaid,
       );
     } catch (e) {
+      debugPrint(
+        'PRIVATE WORKER SUMMARY ERROR => $e',
+      );
+
       return PrivateWorkerSummary(
         balance: 0,
       );
