@@ -1,22 +1,42 @@
 -- ============================================================
--- CONSTRUCTION MANAGER — SUPABASE SCHEMA
--- Run this in your Supabase project → SQL Editor
+-- CONSTRUCTION MANAGER — SUPABASE SCHEMA (COMPLETE RESET)
+-- Run this ENTIRE script in Supabase → SQL Editor
 -- ============================================================
 
--- Enable UUID extension
+-- ============================================================
+-- STEP 1: DROP EXISTING TABLES (clean slate)
+-- ============================================================
+DROP TABLE IF EXISTS site_elevations      CASCADE;
+DROP TABLE IF EXISTS site_floor_files     CASCADE;
+DROP TABLE IF EXISTS site_agreements      CASCADE;
+DROP TABLE IF EXISTS private_worker_payments CASCADE;
+DROP TABLE IF EXISTS private_work         CASCADE;
+DROP TABLE IF EXISTS private_workers      CASCADE;
+DROP TABLE IF EXISTS attendance           CASCADE;
+DROP TABLE IF EXISTS sites                CASCADE;
+DROP TABLE IF EXISTS workers              CASCADE;
+
+-- ============================================================
+-- STEP 2: ENABLE UUID EXTENSION
+-- ============================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================
+-- STEP 3: GRANT SCHEMA USAGE TO ROLES (fixes permission errors)
+-- ============================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 
 -- ============================================================
 -- 1. WORKERS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS workers (
+CREATE TABLE workers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,
-  phone       TEXT NOT NULL,
-  gender      TEXT NOT NULL,
-  state       TEXT NOT NULL,
-  role        TEXT NOT NULL,
-  work_type   TEXT NOT NULL,
+  phone       TEXT NOT NULL DEFAULT '',
+  gender      TEXT NOT NULL DEFAULT 'Male',
+  state       TEXT NOT NULL DEFAULT 'Telangana',
+  role        TEXT NOT NULL DEFAULT 'Mason',
+  work_type   TEXT NOT NULL DEFAULT 'Centring',
   rate_6_6    NUMERIC(10,2) DEFAULT 0,
   rate_10_6   NUMERIC(10,2) DEFAULT 0,
   rate_6_10   NUMERIC(10,2) DEFAULT 0,
@@ -26,24 +46,20 @@ CREATE TABLE IF NOT EXISTS workers (
   notes       TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE workers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage workers"
-  ON workers FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.workers TO authenticated;
+GRANT SELECT ON public.workers TO anon;
+ALTER TABLE workers DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 2. ATTENDANCE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS attendance (
+CREATE TABLE attendance (
   id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   worker_id        UUID NOT NULL REFERENCES workers(id) ON DELETE CASCADE,
   site_id          UUID,
   date             TIMESTAMPTZ NOT NULL,
   date_key         TEXT NOT NULL,
-  attendance_type  TEXT NOT NULL,
+  attendance_type  TEXT NOT NULL DEFAULT 'Absent',
   wage             NUMERIC(10,2) DEFAULT 0,
   advance          NUMERIC(10,2) DEFAULT 0,
   payment_mode     TEXT DEFAULT 'Cash',
@@ -51,71 +67,58 @@ CREATE TABLE IF NOT EXISTS attendance (
   balance_after    NUMERIC(10,2) DEFAULT 0,
   created_at       TIMESTAMPTZ DEFAULT NOW()
 );
-
-CREATE INDEX IF NOT EXISTS attendance_worker_date ON attendance(worker_id, date_key);
-
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage attendance"
-  ON attendance FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+CREATE INDEX attendance_worker_date_idx ON attendance(worker_id, date_key);
+GRANT ALL ON public.attendance TO authenticated;
+GRANT SELECT ON public.attendance TO anon;
+ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 3. SITES
 -- ============================================================
-CREATE TABLE IF NOT EXISTS sites (
+CREATE TABLE sites (
   id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   site_name         TEXT NOT NULL,
-  site_name_search  TEXT NOT NULL,
+  site_name_search  TEXT NOT NULL DEFAULT '',
   location          TEXT,
   owner_name        TEXT,
   owner_phone       TEXT,
   start_date        TEXT,
-  budget            NUMERIC(12,2) DEFAULT 0,
+  budget            NUMERIC(14,2) DEFAULT 0,
   floors_count      INT DEFAULT 1,
   status            TEXT DEFAULT 'Active',
   notes             TEXT,
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE sites ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage sites"
-  ON sites FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.sites TO authenticated;
+GRANT SELECT ON public.sites TO anon;
+ALTER TABLE sites DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 4. PRIVATE WORKERS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS private_workers (
+CREATE TABLE private_workers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,
-  work_type   TEXT NOT NULL,
-  phone       TEXT NOT NULL,
+  work_type   TEXT NOT NULL DEFAULT '',
+  phone       TEXT NOT NULL DEFAULT '',
   notes       TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE private_workers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage private_workers"
-  ON private_workers FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.private_workers TO authenticated;
+GRANT SELECT ON public.private_workers TO anon;
+ALTER TABLE private_workers DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 5. PRIVATE WORK
 -- ============================================================
-CREATE TABLE IF NOT EXISTS private_work (
+CREATE TABLE private_work (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   worker_id      UUID NOT NULL REFERENCES private_workers(id) ON DELETE CASCADE,
-  worker_name    TEXT NOT NULL,
-  work_type      TEXT NOT NULL,
+  worker_name    TEXT NOT NULL DEFAULT '',
+  work_type      TEXT NOT NULL DEFAULT '',
   site_id        UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-  site_name      TEXT NOT NULL,
+  site_name      TEXT NOT NULL DEFAULT '',
   work_date      TEXT NOT NULL,
   price_charged  NUMERIC(10,2) DEFAULT 0,
   amount_paid    NUMERIC(10,2) DEFAULT 0,
@@ -123,111 +126,81 @@ CREATE TABLE IF NOT EXISTS private_work (
   notes          TEXT,
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE private_work ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage private_work"
-  ON private_work FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.private_work TO authenticated;
+GRANT SELECT ON public.private_work TO anon;
+ALTER TABLE private_work DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 6. PRIVATE WORKER PAYMENTS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS private_worker_payments (
+CREATE TABLE private_worker_payments (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   worker_id   UUID NOT NULL REFERENCES private_workers(id) ON DELETE CASCADE,
-  amount      NUMERIC(10,2) NOT NULL,
-  direction   TEXT NOT NULL,  -- 'dad_to_worker' or 'worker_to_dad'
-  mode        TEXT NOT NULL,  -- 'Cash' or 'Online'
+  amount      NUMERIC(10,2) NOT NULL DEFAULT 0,
+  direction   TEXT NOT NULL DEFAULT 'dad_to_worker',
+  mode        TEXT NOT NULL DEFAULT 'Cash',
   date        TEXT NOT NULL,
   notes       TEXT,
   source      TEXT DEFAULT 'manual',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE private_worker_payments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage private_worker_payments"
-  ON private_worker_payments FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.private_worker_payments TO authenticated;
+GRANT SELECT ON public.private_worker_payments TO anon;
+ALTER TABLE private_worker_payments DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 7. SITE AGREEMENTS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS site_agreements (
+CREATE TABLE site_agreements (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   site_id     UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-  file_path   TEXT NOT NULL,
-  file_name   TEXT NOT NULL,
+  file_path   TEXT NOT NULL DEFAULT '',
+  file_name   TEXT NOT NULL DEFAULT '',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE site_agreements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage site_agreements"
-  ON site_agreements FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.site_agreements TO authenticated;
+GRANT SELECT ON public.site_agreements TO anon;
+ALTER TABLE site_agreements DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 8. SITE FLOOR FILES
 -- ============================================================
-CREATE TABLE IF NOT EXISTS site_floor_files (
+CREATE TABLE site_floor_files (
   id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   site_id      UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-  floor_no     INT NOT NULL,
-  file_name    TEXT NOT NULL,
-  file_path    TEXT NOT NULL,
+  floor_no     INT NOT NULL DEFAULT 0,
+  file_name    TEXT NOT NULL DEFAULT '',
+  file_path    TEXT NOT NULL DEFAULT '',
   uploaded_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE site_floor_files ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage site_floor_files"
-  ON site_floor_files FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.site_floor_files TO authenticated;
+GRANT SELECT ON public.site_floor_files TO anon;
+ALTER TABLE site_floor_files DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- 9. SITE ELEVATIONS
 -- ============================================================
-CREATE TABLE IF NOT EXISTS site_elevations (
+CREATE TABLE site_elevations (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   site_id     UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-  file_name   TEXT NOT NULL,
-  file_path   TEXT NOT NULL,
+  file_name   TEXT NOT NULL DEFAULT '',
+  file_path   TEXT NOT NULL DEFAULT '',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-ALTER TABLE site_elevations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can manage site_elevations"
-  ON site_elevations FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+GRANT ALL ON public.site_elevations TO authenticated;
+GRANT SELECT ON public.site_elevations TO anon;
+ALTER TABLE site_elevations DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- STORAGE BUCKET  (run separately in Supabase Storage UI
---  OR uncomment below if using service_role key)
+-- STEP 4: GRANT ON SEQUENCES
+-- ============================================================
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- ============================================================
+-- STEP 5: STORAGE BUCKET
+-- Run this separately if needed (or create via Supabase UI)
+-- Bucket name: construction-files  (set to Public)
 -- ============================================================
 -- INSERT INTO storage.buckets (id, name, public)
 -- VALUES ('construction-files', 'construction-files', true)
--- ON CONFLICT DO NOTHING;
-
--- Storage policy example (run in SQL editor):
--- CREATE POLICY "Authenticated uploads"
---   ON storage.objects FOR INSERT
---   TO authenticated
---   WITH CHECK (bucket_id = 'construction-files');
---
--- CREATE POLICY "Public read"
---   ON storage.objects FOR SELECT
---   TO public
---   USING (bucket_id = 'construction-files');
---
--- CREATE POLICY "Authenticated delete"
---   ON storage.objects FOR DELETE
---   TO authenticated
---   USING (bucket_id = 'construction-files');
+-- ON CONFLICT (id) DO NOTHING;
