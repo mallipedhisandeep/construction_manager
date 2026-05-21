@@ -1,10 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../auth/auth_service.dart';
 
-final authServiceProvider =
-    Provider<AuthService>(
-  (ref) {
-    return AuthService.instance;
-  },
-);
+final authServiceProvider = Provider<AuthService>((ref) => AuthService.instance);
+
+/// false = English, true = Telugu
+final languageProvider = StateProvider<bool>((ref) => false);
