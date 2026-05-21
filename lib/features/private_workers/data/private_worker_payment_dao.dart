@@ -7,9 +7,6 @@ class PrivateWorkerPaymentDao {
   final SupabaseService _supabase =
       SupabaseService.instance;
 
-  dynamic get _collection =>
-      _supabase.privateWorkerPayments;
-
   // ==============================
   // INSERT
   // ==============================
@@ -17,59 +14,39 @@ class PrivateWorkerPaymentDao {
   Future<void> insert(
     PrivateWorkerPayment payment,
   ) async {
-
-    await _collection.insert(
-      payment.toMap(),
-    );
+    await _supabase.privateWorkerPayments
+        .insert(payment.toMap());
   }
 
   // ==============================
   // GET BY WORKER
+  // FIX: was using camelCase 'workerId' and 'createdAt' — 
+  //      must use snake_case column names matching the Supabase table
   // ==============================
 
-  Future<List<PrivateWorkerPayment>>
-      getByWorker(
+  Future<List<PrivateWorkerPayment>> getByWorker(
     String workerId,
   ) async {
+    final response = await _supabase.privateWorkerPayments
+        .select()
+        .eq('worker_id', workerId)
+        .order('created_at', ascending: false);
 
-    final response =
-        await _collection
-            .select()
-            .eq(
-              'workerId',
-              workerId,
-            )
-            .order(
-              'createdAt',
-              ascending: false,
-            );
-
-    return (response as List)
-        .map(
-      (doc) {
-
-        return PrivateWorkerPayment
-            .fromMap(
-          doc,
-          doc['id'].toString(),
-        );
-      },
-    ).toList();
+    return (response as List).map((doc) {
+      return PrivateWorkerPayment.fromMap(
+        doc,
+        doc['id'].toString(),
+      );
+    }).toList();
   }
 
   // ==============================
   // DELETE
   // ==============================
 
-  Future<void> delete(
-    String id,
-  ) async {
-
-    await _collection
+  Future<void> delete(String id) async {
+    await _supabase.privateWorkerPayments
         .delete()
-        .eq(
-          'id',
-          id,
-        );
+        .eq('id', id);
   }
 }
