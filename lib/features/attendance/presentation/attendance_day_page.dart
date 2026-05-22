@@ -188,7 +188,7 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
                     child: Text(type!, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold))),
                   if (att.advance > 0) ...[
                     const SizedBox(width: 6),
-                    Text('${s.advance.split('(')[0].trim()}: ₹${att.advance.toStringAsFixed(0)}',
+                    Text('Adv: ₹${att.advance.toStringAsFixed(0)}',
                       style: const TextStyle(fontSize: 11, color: Colors.orange)),
                   ],
                 ])
