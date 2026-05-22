@@ -1,194 +1,194 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../core/localization/app_strings.dart';
-import '../../../core/providers/app_providers.dart';
-import '../data/worker_dao.dart';
-import '../data/worker_model.dart';
-import 'add_worker_page.dart';
-import 'worker_details_page.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class WorkersListPage extends ConsumerStatefulWidget {
-  const WorkersListPage({super.key});
+import '../localization/app_strings.dart';
+import '../providers/app_providers.dart';
+import '../../features/auth/presentation/login_page.dart';
+import '../../features/attendance/presentation/attendance_home_page.dart';
+import '../../features/private_work/presentation/private_work_list_page.dart';
+import '../../features/private_workers/presentation/private_workers_list_page.dart';
+import '../../features/sites/presentation/sites_list_page.dart';
+import '../../features/workers/presentation/workers_list_page.dart';
+import '../../features/workers/data/worker_dao.dart';
+import '../../features/sites/data/site_dao.dart';
+import '../../features/private_workers/data/private_worker_dao.dart';
+
+final GoRouter appRouter = GoRouter(
+  initialLocation: '/',
+  redirect: (context, state) {
+    final loggedIn = Supabase.instance.client.auth.currentUser != null;
+    final goingLogin = state.matchedLocation == '/login';
+    if (!loggedIn && !goingLogin) return '/login';
+    if (loggedIn && goingLogin) return '/';
+    return null;
+  },
+  routes: [
+    GoRoute(path: '/login', builder: (c, s) => const LoginPage()),
+    GoRoute(path: '/', builder: (c, s) => const HomeScreen()),
+    GoRoute(path: '/attendance', builder: (c, s) => const AttendanceHomePage()),
+    GoRoute(path: '/workers', builder: (c, s) => const WorkersListPage()),
+    GoRoute(path: '/sites', builder: (c, s) => const SitesListPage()),
+    GoRoute(path: '/private-workers', builder: (c, s) => const PrivateWorkersListPage()),
+    GoRoute(path: '/private-work', builder: (c, s) => const PrivateWorkListPage()),
+  ],
+);
+
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
   @override
-  ConsumerState<WorkersListPage> createState() => _WorkersListPageState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _WorkersListPageState extends ConsumerState<WorkersListPage> {
-  final WorkerDao _dao = WorkerDao();
-  String _search = '', _filterType = 'All', _filterState = 'All';
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int workerCount = 0, activeSiteCount = 0, privateWorkerCount = 0;
+  bool loading = true;
 
-  // Fixed: use Map<String, MaterialColor> so .shade variants work
-  static const Map<String, MaterialColor> _stateColors = {
-    'Telangana': Colors.green,
-    'Andhra':    Colors.blue,
-    'Bihar':     Colors.orange,
-  };
+  @override
+  void initState() { super.initState(); _loadStats(); }
+
+  Future<void> _loadStats() async {
+    try {
+      final w = await WorkerDao().getAllWorkers();
+      final s = await SiteDao().getAllSites();
+      final p = await PrivateWorkerDao().getAll();
+      if (mounted) setState(() {
+        workerCount       = w.length;
+        activeSiteCount   = s.where((x) => x.status == 'Active').length;
+        privateWorkerCount = p.length;
+        loading = false;
+      });
+    } catch (_) { if (mounted) setState(() => loading = false); }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final s = S(ref.watch(languageProvider));
+    final isTelugu = ref.watch(languageProvider);
+    final s  = S(isTelugu);
     final cs = Theme.of(context).colorScheme;
+    final user = Supabase.instance.client.auth.currentUser;
+
+    final modules = [
+      (title: s.attendance,     icon: Icons.calendar_month_rounded,  route: '/attendance',      color: Colors.deepOrange),
+      (title: s.workers,        icon: Icons.groups_rounded,           route: '/workers',         color: Colors.blue),
+      (title: s.sites,          icon: Icons.location_city_rounded,    route: '/sites',           color: Colors.green),
+      (title: s.privateWorkers, icon: Icons.engineering_rounded,      route: '/private-workers', color: Colors.purple),
+      (title: s.privateWork,    icon: Icons.work_rounded,             route: '/private-work',    color: Colors.teal),
+    ];
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: Text(s.workers, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(s.appTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: cs.primary, foregroundColor: Colors.white,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async =>
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddWorkerPage())),
-        icon: const Icon(Icons.person_add_rounded),
-        label: Text(s.addWorker),
-      ),
-      body: Column(children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: Column(children: [
-            TextField(
-              decoration: InputDecoration(
-                hintText: s.searchWorkers,
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onChanged: (v) => setState(() => _search = v),
+        actions: [
+          // FIX 7: Language toggle button — visible on home screen
+          GestureDetector(
+            onTap: () => ref.read(languageProvider.notifier).state = !isTelugu,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8)),
+              child: Center(child: Text(
+                isTelugu ? 'EN' : 'తె',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
             ),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: _filterRow(['All', 'Centring', 'Brickwork'], _filterType,
-                (v) => setState(() => _filterType = v))),
-              const SizedBox(width: 8),
-              Expanded(child: _filterRow(['All', 'Telangana', 'Andhra', 'Bihar'], _filterState,
-                (v) => setState(() => _filterState = v))),
-            ]),
-          ]),
-        ),
-        Expanded(
-          child: StreamBuilder<List<WorkerModel>>(
-            stream: _dao.watchWorkers(),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snap.hasError) {
-                return Center(child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('${s.errorPrefix}${snap.error}', style: const TextStyle(color: Colors.red))));
-              }
-              var workers = snap.data ?? [];
-              if (_search.isNotEmpty) {
-                workers = workers.where((w) =>
-                  w.name.toLowerCase().contains(_search.toLowerCase()) ||
-                  w.phone.contains(_search)).toList();
-              }
-              if (_filterType != 'All') workers = workers.where((w) => w.workType == _filterType).toList();
-              if (_filterState != 'All') workers = workers.where((w) => w.state == _filterState).toList();
-
-              if (workers.isEmpty) {
-                return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.groups_outlined, size: 64, color: Colors.grey.shade300),
-                  const SizedBox(height: 12),
-                  Text(s.noWorkers, style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-                ]));
-              }
-
-              final grouped = <String, List<WorkerModel>>{};
-              for (final w in workers) grouped.putIfAbsent(w.workType, () => []).add(w);
-
-              return ListView(
-                padding: const EdgeInsets.only(bottom: 100),
-                children: [
-                  for (final entry in grouped.entries) ...[
-                    _sectionHeader(entry.key, entry.value.length, cs),
-                    ...entry.value.map((w) => _workerCard(w, s, cs)),
-                  ],
-                ],
-              );
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: s.signOut,
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (context.mounted) context.go('/login');
             },
           ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadStats,
+        child: ListView(
+          padding: const EdgeInsets.all(14),
+          children: [
+            // Welcome card
+            Card(
+              color: cs.primary,
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(children: [
+                  const Icon(Icons.construction_rounded, color: Colors.white, size: 38),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.welcome, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text(user?.email?.split('@').first.toUpperCase() ?? 'Admin',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ])),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Stats — FIX 2: "Contractors" → s.privateWorkers
+            loading
+              ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+              : Row(children: [
+                  _stat(s.workers,        workerCount,        Icons.groups_rounded,    Colors.blue,    context),
+                  const SizedBox(width: 8),
+                  _stat(s.activeSites,    activeSiteCount,    Icons.domain_rounded,    Colors.green,   context),
+                  const SizedBox(width: 8),
+                  _stat(s.privateWorkers, privateWorkerCount, Icons.engineering_rounded,Colors.purple, context),
+                ]),
+            const SizedBox(height: 16),
+
+            Text(s.modules, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            GridView.builder(
+              shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.3),
+              itemCount: modules.length,
+              itemBuilder: (context, i) {
+                final m = modules[i];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => context.push(m.route),
+                  child: Card(child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: m.color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(m.icon, size: 28, color: m.color),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(m.title, textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2),
+                    ]),
+                  )),
+                );
+              },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _stat(String label, int count, IconData icon, Color color, BuildContext context) {
+    return Expanded(child: Card(child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Column(children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 4),
+        Text('$count', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey),
+          textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
       ]),
-    );
+    )));
   }
-
-  Widget _filterRow(List<String> options, String selected, ValueChanged<String> onSelect) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: options.map((o) => Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: ChoiceChip(
-          label: Text(o, style: const TextStyle(fontSize: 11)),
-          selected: selected == o,
-          onSelected: (_) => onSelect(o),
-          visualDensity: VisualDensity.compact,
-        ),
-      )).toList()),
-    );
-  }
-
-  Widget _sectionHeader(String title, int count, ColorScheme cs) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-    child: Row(children: [
-      Container(width: 4, height: 20, decoration: BoxDecoration(
-        color: cs.primary, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 8),
-      Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      const SizedBox(width: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
-        child: Text('$count', style: TextStyle(fontSize: 12, color: cs.onPrimaryContainer, fontWeight: FontWeight.bold)),
-      ),
-    ]),
-  );
-
-  Widget _workerCard(WorkerModel w, S s, ColorScheme cs) {
-    // Safe: _stateColors values are MaterialColor so .shade100/.shade800 work
-    final stateColor = _stateColors[w.state] ?? Colors.grey;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: cs.primaryContainer,
-          radius: 22,
-          child: Text(w.name.isNotEmpty ? w.name[0].toUpperCase() : '?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
-        ),
-        title: Text(w.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 4),
-          Row(children: [
-            _chip(w.role, Colors.grey.shade100, Colors.grey.shade700),
-            const SizedBox(width: 6),
-            _chip(w.state, stateColor.shade100, stateColor.shade800),
-          ]),
-          const SizedBox(height: 4),
-          Text('₹${w.rate6to6.toStringAsFixed(0)}/day (6-6)',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        ]),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (w.phone.isNotEmpty) IconButton(
-            icon: const Icon(Icons.call_rounded, color: Colors.green),
-            onPressed: () async => await launchUrl(Uri.parse('tel:${w.phone}')),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        ]),
-        onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => WorkerDetailsPage(worker: w))),
-      ),
-    );
-  }
-
-  Widget _chip(String label, Color bg, Color text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-    child: Text(label, style: TextStyle(fontSize: 11, color: text, fontWeight: FontWeight.w500)),
-  );
 }
