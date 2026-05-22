@@ -1,219 +1,191 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../core/localization/app_strings.dart';
-import '../../../core/providers/app_providers.dart';
-import '../data/worker_dao.dart';
-import '../data/worker_model.dart';
-import 'add_worker_page.dart';
-import 'worker_details_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../workers/data/worker_model.dart';
 
-class WorkersListPage extends ConsumerStatefulWidget {
-  const WorkersListPage({super.key});
+class AttendanceWorkerMonthlyPage extends StatefulWidget {
+  final WorkerModel worker;
+  final int year, month;
+  final String monthName;
+  const AttendanceWorkerMonthlyPage({
+    super.key,
+    required this.worker,
+    required this.year,
+    required this.month,
+    required this.monthName,
+  });
   @override
-  ConsumerState<WorkersListPage> createState() => _WorkersListPageState();
+  State<AttendanceWorkerMonthlyPage> createState() => _State();
 }
 
-class _WorkersListPageState extends ConsumerState<WorkersListPage> {
-  final WorkerDao _dao = WorkerDao();
-  String _search = '';
-  // FIX 8: single nullable filter — null means 'All'
-  String? _filterType;   // null=All, 'Centring', 'Brickwork'
-  String? _filterState;  // null=All, 'Telangana', 'Andhra', 'Bihar'
+class _State extends State<AttendanceWorkerMonthlyPage> {
+  List<Map<String, dynamic>> _records = [];
+  bool _loading = true;
 
-  // FIX: explicit MaterialColor map so .shade variants compile correctly
-  static const Map<String, MaterialColor> _stateColors = {
-    'Telangana': Colors.green,
-    'Andhra':    Colors.blue,
-    'Bihar':     Colors.orange,
+  static const Map<String, Color> _shiftColors = {
+    '6-6':   Color(0xFF2E7D32),
+    '10-6':  Color(0xFF00695C),
+    '6-10':  Color(0xFF1565C0),
+    '6-2':   Color(0xFF283593),
+    '10-2':  Color(0xFF6A1B9A),
+    '2-6':   Color(0xFF00838F),
+    'Absent':Color(0xFFC62828),
   };
 
   @override
+  void initState() { super.initState(); _load(); }
+
+  Future<void> _load() async {
+    try {
+      final client = Supabase.instance.client;
+      // Get attendance records for this worker in this month
+      final response = await client
+          .from('attendance')
+          .select('*, sites(site_name)')
+          .eq('worker_id', widget.worker.id!)
+          .gte('date', DateTime(widget.year, widget.month, 1).toIso8601String())
+          .lt('date', DateTime(widget.year, widget.month + 1, 1).toIso8601String())
+          .order('date', ascending: true);
+
+      if (mounted) setState(() {
+        _records = List<Map<String, dynamic>>.from(response);
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final s = S(ref.watch(languageProvider));
     final cs = Theme.of(context).colorScheme;
+
+    // Calculate totals
+    double totalEarned  = 0, totalAdvance = 0;
+    int workedDays = 0;
+    for (final r in _records) {
+      final type = r['attendance_type'] as String? ?? '';
+      if (type != 'Absent') {
+        totalEarned += ((r['wage'] ?? 0) as num).toDouble();
+        workedDays++;
+      }
+      totalAdvance += ((r['advance'] ?? 0) as num).toDouble();
+    }
+    final balance = totalEarned - totalAdvance;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: Text(s.workers, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(widget.worker.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('${widget.monthName} ${widget.year}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+        ]),
         backgroundColor: cs.primary, foregroundColor: Colors.white,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async =>
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddWorkerPage())),
-        icon: const Icon(Icons.person_add_rounded),
-        label: Text(s.addWorker),
-      ),
-      body: Column(children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TextField(
-              decoration: InputDecoration(
-                hintText: s.searchWorkers,
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onChanged: (v) => setState(() => _search = v),
+      body: _loading
+        ? const Center(child: CircularProgressIndicator())
+        : Column(children: [
+            // Summary bar
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(12),
+              child: Row(children: [
+                _summaryTile('Days', '$workedDays', Colors.blue),
+                _summaryTile('Earned', '₹${totalEarned.toStringAsFixed(0)}', Colors.green),
+                _summaryTile('Advance', '₹${totalAdvance.toStringAsFixed(0)}', Colors.orange),
+                _summaryTile('Balance',
+                  balance >= 0 ? '₹${balance.toStringAsFixed(0)}' : '-₹${balance.abs().toStringAsFixed(0)}',
+                  balance >= 0 ? Colors.green : Colors.red),
+              ]),
             ),
-            const SizedBox(height: 8),
-            // FIX 8: Work type filter — label + chips, no 'All' label duplication
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Text('${s.workType}: ', style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-              Wrap(spacing: 6, children: [null, 'Centring', 'Brickwork'].map((v) {
-                final selected = _filterType == v;
-                final label = v == null ? 'All' : v;
-                return GestureDetector(
-                  onTap: () => setState(() => _filterType = v),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: selected ? cs.primary : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: selected ? cs.primary : Colors.grey.shade300)),
-                    child: Text(label, style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500,
-                      color: selected ? Colors.white : Colors.grey.shade700)),
-                  ),
-                );
-              }).toList()),
-            ]),
-            const SizedBox(height: 6),
-            // State filter
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Text('${s.state}: ', style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-              Wrap(spacing: 6, children: [null, 'Telangana', 'Andhra', 'Bihar'].map((v) {
-                final selected = _filterState == v;
-                final label = v == null ? 'All' : v;
-                return GestureDetector(
-                  onTap: () => setState(() => _filterState = v),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: selected ? cs.primary : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: selected ? cs.primary : Colors.grey.shade300)),
-                    child: Text(label, style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500,
-                      color: selected ? Colors.white : Colors.grey.shade700)),
-                  ),
-                );
-              }).toList()),
-            ]),
-          ]),
-        ),
-        Expanded(
-          child: StreamBuilder<List<WorkerModel>>(
-            stream: _dao.watchWorkers(),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snap.hasError) {
-                return Center(child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+            const Divider(height: 1),
+
+            // Records list
+            Expanded(
+              child: _records.isEmpty
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.calendar_today_outlined, size: 48, color: Colors.grey.shade300),
                     const SizedBox(height: 8),
-                    Text('${s.errorPrefix}${snap.error}', textAlign: TextAlign.center),
-                  ])));
-              }
-              var workers = snap.data ?? [];
-              if (_search.isNotEmpty) {
-                workers = workers.where((w) =>
-                  w.name.toLowerCase().contains(_search.toLowerCase()) ||
-                  w.phone.contains(_search)).toList();
-              }
-              if (_filterType  != null) workers = workers.where((w) => w.workType == _filterType).toList();
-              if (_filterState != null) workers = workers.where((w) => w.state    == _filterState).toList();
+                    Text('No records for ${widget.monthName}',
+                      style: TextStyle(color: Colors.grey.shade500)),
+                  ]))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _records.length,
+                    itemBuilder: (_, i) {
+                      final r = _records[i];
+                      final type = r['attendance_type'] as String? ?? 'Absent';
+                      final date = DateTime.tryParse(r['date'] ?? '');
+                      final wage = ((r['wage'] ?? 0) as num).toDouble();
+                      final adv  = ((r['advance'] ?? 0) as num).toDouble();
+                      final site = r['sites'] != null
+                        ? (r['sites'] as Map)['site_name'] as String? ?? ''
+                        : '';
+                      final col = _shiftColors[type] ?? Colors.grey;
+                      final isAbsent = type == 'Absent';
 
-              if (workers.isEmpty) {
-                return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.groups_outlined, size: 64, color: Colors.grey.shade300),
-                  const SizedBox(height: 12),
-                  Text(s.noWorkers, style: TextStyle(color: Colors.grey.shade500, fontSize: 15)),
-                ]));
-              }
-
-              final grouped = <String, List<WorkerModel>>{};
-              for (final w in workers) grouped.putIfAbsent(w.workType, () => []).add(w);
-
-              return ListView(
-                padding: const EdgeInsets.only(bottom: 100),
-                children: [
-                  for (final entry in grouped.entries) ...[
-                    _sectionHeader(entry.key, entry.value.length, cs),
-                    ...entry.value.map((w) => _workerCard(w, s, cs)),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
-      ]),
-    );
-  }
-
-  Widget _sectionHeader(String title, int count, ColorScheme cs) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-    child: Row(children: [
-      Container(width: 4, height: 18, decoration: BoxDecoration(
-        color: cs.primary, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 8),
-      Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-      const SizedBox(width: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(10)),
-        child: Text('$count', style: TextStyle(fontSize: 11, color: cs.onPrimaryContainer, fontWeight: FontWeight.bold)),
-      ),
-    ]),
-  );
-
-  Widget _workerCard(WorkerModel w, S s, ColorScheme cs) {
-    // Safe: map is Map<String, MaterialColor> so .shade100/.shade800 are valid
-    final MaterialColor stateColor = _stateColors[w.state] ?? Colors.grey;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor: cs.primaryContainer, radius: 20,
-          child: Text(w.name.isNotEmpty ? w.name[0].toUpperCase() : '?',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer))),
-        title: Text(w.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 4),
-          Row(children: [
-            _chip(w.role,  Colors.grey.shade100,    Colors.grey.shade700),
-            const SizedBox(width: 6),
-            _chip(w.state, stateColor.shade100, stateColor.shade800),
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          child: Row(children: [
+                            // Day number
+                            Container(
+                              width: 36, height: 36,
+                              decoration: BoxDecoration(
+                                color: col.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8)),
+                              child: Center(child: Text(
+                                '${date?.day ?? '?'}',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: col))),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: col.withOpacity(isAbsent ? 0.08 : 0.12),
+                                    borderRadius: BorderRadius.circular(6)),
+                                  child: Text(type, style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold, color: col))),
+                                if (site.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade400),
+                                  Expanded(child: Text(site, overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600))),
+                                ],
+                              ]),
+                              if (!isAbsent) ...[
+                                const SizedBox(height: 4),
+                                Row(children: [
+                                  Text('Earned: ₹${wage.toStringAsFixed(0)}',
+                                    style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.w500)),
+                                  if (adv > 0) ...[
+                                    const SizedBox(width: 12),
+                                    Text('Adv: ₹${adv.toStringAsFixed(0)}',
+                                      style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w500)),
+                                  ],
+                                ]),
+                              ],
+                            ])),
+                            // Day of week
+                            if (date != null) Text(
+                              _dayName(date.weekday),
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                          ]),
+                        ),
+                      );
+                    },
+                  ),
+            ),
           ]),
-          const SizedBox(height: 3),
-          Text('₹${w.rate6to6.toStringAsFixed(0)}/day',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-        ]),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (w.phone.isNotEmpty) IconButton(
-            icon: const Icon(Icons.call_rounded, color: Colors.green, size: 20),
-            onPressed: () => launchUrl(Uri.parse('tel:${w.phone}')),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        ]),
-        onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => WorkerDetailsPage(worker: w))),
-      ),
     );
   }
 
-  Widget _chip(String label, Color bg, Color text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-    child: Text(label, style: TextStyle(fontSize: 10, color: text, fontWeight: FontWeight.w500)),
-  );
+  Widget _summaryTile(String label, String value, Color color) => Expanded(child: Column(children: [
+    Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+    Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+  ]));
+
+  String _dayName(int wd) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][wd - 1];
 }
