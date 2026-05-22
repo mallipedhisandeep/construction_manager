@@ -108,7 +108,7 @@ class PrivateWorkDetailsPage extends StatelessWidget {
         Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         const SizedBox(height: 4),
         Text('₹${amount.toStringAsFixed(0)}',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color.shade700)),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
       ]),
     ));
   }
