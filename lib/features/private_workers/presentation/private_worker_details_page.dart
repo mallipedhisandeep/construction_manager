@@ -125,7 +125,10 @@ class _PrivateWorkerDetailsPageState extends State<PrivateWorkerDetailsPage> {
                 icon: const Icon(Icons.history_rounded),
                 label: const Text('History'),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => PrivateWorkerPaymentHistoryPage(workerId: widget.worker.id!))),
+                  builder: (_) => PrivateWorkerPaymentHistoryPage(
+                    workerId: widget.worker.id!,
+                    workerName: widget.worker.name,
+                  ))),
               )),
             ]),
             const SizedBox(height: 24),
